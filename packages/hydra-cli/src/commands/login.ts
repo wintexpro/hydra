@@ -9,8 +9,8 @@ export default class Login extends Command {
   static description = `Login for saas management`
   async run(): Promise<void> {
     const auth = createOAuthDeviceAuth({
-      clientType: 'github-app',
-      clientId: 'Iv1.96214ffc6c1fe709', // maybe fetch from api
+      clientType: 'oauth-app',
+      clientId: '5c7874d514287376e203', // maybe fetch from api
       onVerification(verification: Verification) {
         console.log('Open %s', verification.verification_uri)
         console.log('Enter code: %s', verification.user_code)
