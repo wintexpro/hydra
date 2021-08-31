@@ -1,4 +1,10 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  unlinkSync,
+} from 'fs'
 import { resolve } from 'path'
 import { homedir } from 'os'
 import fetch from 'node-fetch'
@@ -24,6 +30,14 @@ export function getCreds(): string {
     throw new Error(`Credentials data not found. Run hydra-cli login`)
   }
   return creds
+}
+
+export function deleteCreds(): void {
+  try {
+    unlinkSync(credentialsFilePath)
+  } catch (e) {
+    throw new Error(`Credentials data not found. Run hydra-cli login`)
+  }
 }
 
 export async function getMe(): Promise<{ login: string }> {
