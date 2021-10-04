@@ -3,7 +3,7 @@ import { logError } from '@subsquid/hydra-common'
 import Debug from 'debug'
 
 import { IStateKeeper, getStateKeeper } from '../state'
-import { error, info } from '../util/log'
+import { system } from '../util/log'
 import { BlockData, getBlockQueue, IBlockQueue } from '../queue'
 import { eventEmitter, ProcessorEvents } from '../start/processor-events'
 import { getMappingExecutor, IMappingExecutor, isTxAware } from '../executor'
@@ -17,7 +17,7 @@ export class MappingsProcessor {
   private mappingsExecutor!: IMappingExecutor
 
   async start(): Promise<void> {
-    info('Starting the processor')
+    system.info('Starting the processor')
     this._started = true
 
     this.mappingsExecutor = await getMappingExecutor()
@@ -63,7 +63,7 @@ export class MappingsProcessor {
 
         // now process the block with events
         if (next.done === true) {
-          info('All the blocks from the queue have been processed')
+          system.info('All the blocks from the queue have been processed')
           break
         }
 
@@ -71,17 +71,17 @@ export class MappingsProcessor {
 
         await this.processBlock(eventBlock)
       } catch (e: any) {
-        error(`Stopping the proccessor due to errors: ${logError(e)}`)
+        system.error(`Stopping the proccessor due to errors: ${logError(e)}`)
         this.stop()
         throw new Error(e)
       }
     }
-    info(`Terminating the processor`)
+    system.info(`Terminating the processor`)
   }
 
   private async processBlock(nextBlock: BlockData) {
-    info(
-      `Processing block: ${nextBlock.block.id}, events count: ${nextBlock.events.length} `
+    system.info(
+      `Processing block: ${nextBlock.block.id}, events count: ${nextBlock.events.length}`
     )
 
     await this.mappingsExecutor.executeBlock(

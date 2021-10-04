@@ -8,7 +8,7 @@ import Debug from 'debug'
 import pThrottle from 'p-throttle'
 import { eventEmitter, ProcessorEvents } from '../start/processor-events'
 import { getConfig as conf, getManifest } from '../start/config'
-import { isInRange, Range, parseEventId, info, warn } from '../util'
+import { isInRange, Range, parseEventId, system } from '../util'
 import { formatEventId, SubstrateEvent } from '@subsquid/hydra-common'
 import { IndexerStatus } from '.'
 import { validateIndexerVersion } from './version'
@@ -42,7 +42,7 @@ export class StateKeeper implements IStateKeeper {
               this.processorState.lastScannedBlock
             } blocks behind`
           : `Connecting to the indexer...`
-      info(
+      system.info(
         `Last block: ${this.processorState.lastScannedBlock} \t: ${syncStatus}`
       )
     })
@@ -101,7 +101,7 @@ export class StateKeeper implements IStateKeeper {
 
     this.indexerStatus = await processorSource.getIndexerStatus()
 
-    info(`Hydra Indexer version: ${this.indexerStatus.hydraVersion}`)
+    system.info(`Hydra Indexer version: ${this.indexerStatus.hydraVersion}`)
 
     const manifest = getManifest()
 
@@ -134,7 +134,7 @@ export function initState(
   range: Range,
   lastState: { eventId: string; lastScannedBlock: number } | undefined
 ): IProcessorState {
-  info(
+  system.info(
     `Mappings will be executed for blocks in the range [${range.from}, ${range.to}], inclusively `
   )
 
@@ -151,7 +151,7 @@ export function initState(
   }
 
   if (isInRange(lastState.lastScannedBlock + 1, range)) {
-    info(
+    system.info(
       `There are already processed blocks in the database. The indexer will continue from block ${
         lastState.lastScannedBlock + 1
       }.`
@@ -163,7 +163,7 @@ export function initState(
   }
 
   if (lastState.lastScannedBlock < range.from) {
-    warn(
+    system.warn(
       `The last processed block ${lastState.lastScannedBlock} is behind the starting block ${range.from}. Make sure it is intended.`
     )
     return {

@@ -5,7 +5,7 @@ import { logError } from '@subsquid/hydra-common'
 import { log } from 'console'
 import { createDBConnection } from '../db/dal'
 import { ProcessorPromClient, startPromEndpoint } from '../prometheus'
-import { error, info } from '../util/log'
+import { system } from '../util/log'
 import pWaitFor from 'p-wait-for'
 import { Server } from 'http'
 import { getHydraVersion } from '../state/version'
@@ -23,7 +23,7 @@ export class ProcessorRunner {
   private promServer: Server | undefined
 
   constructor() {
-    info(`Hydra processor lib version: ${getHydraVersion()}`)
+    system.info(`Hydra processor lib version: ${getHydraVersion()}`)
     // Hook into application
     // eslint-disable-next-line
     process.on('exit', () =>
@@ -40,7 +40,7 @@ export class ProcessorRunner {
    * @param options options passed to create the mappings
    */
   async process(): Promise<void> {
-    info('Establishing a database connection')
+    system.info('Establishing a database connection')
     this.connection = await createDBConnection()
 
     this.processor = new MappingsProcessor()
@@ -50,7 +50,7 @@ export class ProcessorRunner {
       promClient.init()
       this.promServer = startPromEndpoint()
     } catch (e) {
-      error(`Can't start Prometheus endpoint: ${logError(e)}`)
+      system.error(`Can't start Prometheus endpoint: ${logError(e)}`)
     }
 
     await this.processor.start()
@@ -63,7 +63,7 @@ export class ProcessorRunner {
     }
 
     if (this.connection && this.connection.isConnected) {
-      info('Closing the database connection...')
+      system.info('Closing the database connection...')
       await this.connection.close()
       debug('Done closing the connection')
     }

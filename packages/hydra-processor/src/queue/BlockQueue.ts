@@ -1,6 +1,6 @@
 import { getProcessorSource } from '../ingest'
 import { getConfig as conf, getManifest } from '../start/config'
-import { info } from '../util/log'
+import { system } from '../util/log'
 import { uniq, last, first, union, mapValues, chunk } from 'lodash'
 import pWaitFor from 'p-wait-for'
 import delay from 'delay'
@@ -56,7 +56,7 @@ export class BlockQueue implements IBlockQueue {
   heightsWithHooks!: Range[]
 
   async init(): Promise<void> {
-    info(`Waiting for the indexer head to be initialized`)
+    system.info(`Waiting for the indexer head to be initialized`)
 
     this.stateKeeper = await getStateKeeper()
     this.dataSource = await getProcessorSource()
@@ -94,7 +94,7 @@ export class BlockQueue implements IBlockQueue {
   async start(): Promise<void> {
     this._started = true
 
-    info('Starting the event queue')
+    system.info('Starting the event queue')
 
     await Promise.all([this.pollIndexer(), this.fill()])
   }
@@ -241,7 +241,7 @@ export class BlockQueue implements IBlockQueue {
 
   private async shiftRangeFilter(): Promise<void> {
     if (this.rangeFilter.block.lte >= this.mappingFilter.range.to) {
-      info(
+      system.info(
         `All the events up to block ${this.mappingFilter.range.to} has been fetched.`
       )
       this.rangeFilter.block.gt = this.mappingFilter.range.to

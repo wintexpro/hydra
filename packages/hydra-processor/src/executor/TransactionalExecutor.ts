@@ -2,7 +2,7 @@ import { getConnection, EntityManager } from 'typeorm'
 import * as shortid from 'shortid'
 import { getConfig as conf } from '../start/config'
 import Debug from 'debug'
-import { info } from '../util/log'
+import { system } from '../util/log'
 import { BlockData } from '../queue'
 import { getMappingsLookup, IMappingExecutor } from '.'
 import { IMappingsLookup } from './IMappingsLookup'
@@ -16,7 +16,7 @@ export class TransactionalExecutor implements IMappingExecutor {
   private mappingsLookup!: IMappingsLookup
 
   async init(): Promise<void> {
-    info('Initializing mappings executor')
+    system.info('Initializing mappings executor')
     this.mappingsLookup = await getMappingsLookup()
   }
 

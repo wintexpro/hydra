@@ -1,6 +1,6 @@
 import { Command, flags } from '@oclif/command'
 import { ProcessorRunner } from '../start'
-import { error, info } from '../util/log'
+import { system } from '../util/log'
 import dotenv from 'dotenv'
 import { logError } from '@subsquid/hydra-common'
 
@@ -24,7 +24,7 @@ export default class Run extends Command {
   }
 
   async run(): Promise<void> {
-    info('Starting Hydra Processor')
+    system.info('Starting Hydra Processor')
 
     const { flags } = this.parse(Run)
 
@@ -46,10 +46,10 @@ export default class Run extends Command {
     try {
       await processor.process()
     } catch (e) {
-      error(`${logError(e)}`)
+      system.error(`${logError(e)}`)
       process.exitCode = 1
     } finally {
-      info(`Shutting down...`)
+      system.info(`Shutting down...`)
       await processor.shutDown()
     }
   }

@@ -139,7 +139,10 @@ export class MappingsLookupService implements IMappingsLookup {
   }
 
   async load(): Promise<void> {
-    this.resolvedImports = await resolveImports(this.mappings.imports)
+    this.resolvedImports = await resolveImports([
+      ...this.mappings.imports,
+      '../util/log-types.ts',
+    ])
   }
 }
 
