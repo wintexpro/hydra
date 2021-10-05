@@ -4,7 +4,6 @@ import { system } from '../util/log'
 import { uniq, last, first, union, mapValues, chunk } from 'lodash'
 import pWaitFor from 'p-wait-for'
 import delay from 'delay'
-import Debug from 'debug'
 
 import { IndexerStatus, IStateKeeper, getStateKeeper } from '../state'
 import { eventEmitter, ProcessorEvents } from '../start/processor-events'
@@ -22,7 +21,7 @@ import { IndexerQuery, IProcessorSource } from '../ingest/IProcessorSource'
 import { parseEventId } from '../util/utils'
 import { unionAll, Range, numbersIn, intersectWith } from '../util'
 
-const debug = Debug('hydra-processor:event-queue')
+const label = 'hydra-processor:event-queue'
 
 export function getMappingFilter(mappingsDef: MappingsDef): MappingFilter {
   const { eventHandlers, extrinsicHandlers, range } = mappingsDef
@@ -106,7 +105,7 @@ export class BlockQueue implements IBlockQueue {
   async pollIndexer(): Promise<void> {
     // TODO: uncomment this block when eventSource will emit
     // this.eventsSource.on('NewIndexerHead', (h: number) => {
-    //   debug(`New Indexer Head: ${h}`)
+    //   system.debug(`New Indexer Head: ${h}`, { label })
     //   this.indexerHead = h
     // });
     // For now, simply update indexerHead regularly
@@ -142,12 +141,14 @@ export class BlockQueue implements IBlockQueue {
     // FIXME: this method only produces blocks with some event.
 
     while (this._started) {
-      debug(`Sealing new block`)
+      system.debug(`Sealing new block`, { label })
 
       let nextEventData = await this.poll()
 
       if (nextEventData === undefined) {
-        debug(`The queue is empty and all the events were fetched`)
+        system.debug(`The queue is empty and all the events were fetched`, {
+          label,
+        })
         return
       }
 
@@ -157,7 +158,7 @@ export class BlockQueue implements IBlockQueue {
         nextEventData.event.blockNumber
       )
 
-      debug(`Next block: ${block.id}`)
+      system.debug(`Next block: ${block.id}`, { label })
       // wait until all the events up to blockNumber are fully fetched
       pWaitFor(() => this.rangeFilter.block.gt >= block.height)
 
@@ -171,9 +172,11 @@ export class BlockQueue implements IBlockQueue {
       }
 
       // the event is from a new block, yield the current
-      debug(`Yielding block ${block.id}`)
+      system.debug(`Yielding block ${block.id}`, { label })
       if (conf().VERBOSE)
-        debug(`Block contents: ${JSON.stringify(block, null, 2)}`)
+        system.debug(`Block contents: ${JSON.stringify(block, null, 2)}`, {
+          label,
+        })
 
       yield {
         block,
@@ -195,17 +198,18 @@ export class BlockQueue implements IBlockQueue {
           conf().EVENT_QUEUE_MAX_CAPACITY - conf().QUEUE_BATCH_SIZE
       )
 
-      debug(
+      system.debug(
         `Queue size: ${this.eventQueue.length}, max capacity: ${
           conf().EVENT_QUEUE_MAX_CAPACITY
-        }`
+        }`,
+        { label }
       )
 
       const events: EventData[] = await this.fetchNextBatch()
 
       this.eventQueue.push(...events)
 
-      debug(`Pushed ${events.length} events to the queue`)
+      system.debug(`Pushed ${events.length} events to the queue`, { label })
 
       if (events.length > 0) {
         this.rangeFilter.id.gt = last(events)?.event.id as string
@@ -214,10 +218,11 @@ export class BlockQueue implements IBlockQueue {
       if (events.length < conf().QUEUE_BATCH_SIZE) {
         // This means that we have exhausted all the events up to lastScannedblock + WINDOW
         if (conf().VERBOSE)
-          debug(
+          system.debug(
             `Fully fetched the next batch of ${
               conf().QUEUE_BATCH_SIZE
-            }: fetched only ${events.length} events`
+            }: fetched only ${events.length} events`,
+            { label }
           )
 
         await this.shiftRangeFilter()
@@ -228,13 +233,14 @@ export class BlockQueue implements IBlockQueue {
         this.eventQueue.length
       )
 
-      debug(
+      system.debug(
         `Event queue state:
           \tIndexer head: ${this.indexerStatus.head}
           \tChain head: ${this.indexerStatus.chainHeight} 
           \tQueue size: ${this.eventQueue.length}
           \tLast fetched event: ${this.rangeFilter.id.gt}
-          \tBlock range: ${JSON.stringify(this.rangeFilter.block)}`
+          \tBlock range: ${JSON.stringify(this.rangeFilter.block)}`,
+        { label }
       )
     }
   }
@@ -272,7 +278,9 @@ export class BlockQueue implements IBlockQueue {
   async *blocksWithHooks(range: Range): AsyncGenerator<BlockData, void, void> {
     const ranges = intersectWith(range, this.heightsWithHooks)
 
-    debug(`Fetching hooks in ranges: ${JSON.stringify(ranges)}`)
+    system.debug(`Fetching hooks in ranges: ${JSON.stringify(ranges)}`, {
+      label,
+    })
 
     const heights = ranges
       .reduce((acc: number[], r) => [...acc, ...numbersIn(r)], [])
@@ -295,14 +303,15 @@ export class BlockQueue implements IBlockQueue {
       (query) => ({ ...this.rangeFilter, ...query } as IndexerQuery)
     )
 
-    debug(`Fetching next batch`)
+    system.debug(`Fetching next batch`, { label })
     const events = await this.dataSource.nextBatch(queries)
 
     // collect the events object into an array with types
     const trimmed = sortAndTrim(events)
     if (conf().VERBOSE) {
-      debug(
-        `Enqueuing events: ${JSON.stringify(trimmed.map((e) => e.event.id))}`
+      system.debug(
+        `Enqueuing events: ${JSON.stringify(trimmed.map((e) => e.event.id))}`,
+        { label }
       )
     }
 
@@ -310,7 +319,8 @@ export class BlockQueue implements IBlockQueue {
       trimmed.map((e) => parseEventId(e.event.id).blockHeight)
     )
 
-    if (conf().VERBOSE) debug(`Requesting blocks: ${blockHeights}`)
+    if (conf().VERBOSE)
+      system.debug(`Requesting blocks: ${blockHeights}`, { label })
 
     // prefetch to the cache
     await this.dataSource.fetchBlocks(blockHeights)
@@ -370,6 +380,6 @@ export function prepareIndexerQueries(
 
   // TODO: block queries here
 
-  debug(`Queries: ${JSON.stringify(queries, null, 2)}`)
+  system.debug(`Queries: ${JSON.stringify(queries, null, 2)}`, { label })
   return queries
 }

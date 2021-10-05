@@ -1,7 +1,6 @@
 import { getConnection, EntityManager } from 'typeorm'
 import * as shortid from 'shortid'
 import { getConfig as conf } from '../start/config'
-import Debug from 'debug'
 import { system } from '../util/log'
 import { BlockData } from '../queue'
 import { getMappingsLookup, IMappingExecutor } from '.'
@@ -10,7 +9,7 @@ import { DeepPartial, DatabaseManager } from '@subsquid/hydra-common'
 import { makeDatabaseManager } from '../db'
 import { TxAwareBlockContext } from './tx-aware'
 
-const debug = Debug('hydra-processor:mappings-executor')
+const label = 'hydra-processor:mappings-executor'
 
 export class TransactionalExecutor implements IMappingExecutor {
   private mappingsLookup!: IMappingsLookup
@@ -27,12 +26,13 @@ export class TransactionalExecutor implements IMappingExecutor {
     await getConnection().transaction(async (entityManager: EntityManager) => {
       const allMappings = this.mappingsLookup.lookupHandlers(blockData)
       if (conf().VERBOSE)
-        debug(
+        system.debug(
           `Mappings for block ${blockData.block.id}: ${JSON.stringify(
             allMappings,
             null,
             2
-          )}`
+          )}`,
+          { label }
         )
 
       const { pre, post, mappings } = allMappings
@@ -49,9 +49,10 @@ export class TransactionalExecutor implements IMappingExecutor {
       let i = 0
       for (const mapping of mappings) {
         const { event } = blockData.events[i]
-        debug(`Processing event ${event.id}`)
+        system.debug(`Processing event ${event.id}`, { label })
 
-        if (conf().VERBOSE) debug(`JSON: ${JSON.stringify(event, null, 2)}`)
+        if (conf().VERBOSE)
+          system.debug(`JSON: ${JSON.stringify(event, null, 2)}`, { label })
 
         const ctx = {
           ...blockData,
@@ -63,7 +64,7 @@ export class TransactionalExecutor implements IMappingExecutor {
         await this.mappingsLookup.call(mapping, ctx)
         i++
 
-        debug(`Event ${event.id} done`)
+        system.debug(`Event ${event.id} done`, { label })
       }
 
       for (const hook of post) {

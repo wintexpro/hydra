@@ -1,6 +1,5 @@
 import { MappingsProcessor } from '../process/MappingsProcessor'
 import { Connection } from 'typeorm'
-import Debug from 'debug'
 import { logError } from '@subsquid/hydra-common'
 import { log } from 'console'
 import { createDBConnection } from '../db/dal'
@@ -10,7 +9,7 @@ import pWaitFor from 'p-wait-for'
 import { Server } from 'http'
 import { getHydraVersion } from '../state/version'
 
-const debug = Debug('hydra-processor:runner')
+const label = 'hydra-processor:runner'
 
 // Respondible for creating, starting up and shutting down the query node.
 // Currently this class is a bit thin, but it will almost certainly grow
@@ -65,13 +64,13 @@ export class ProcessorRunner {
     if (this.connection && this.connection.isConnected) {
       system.info('Closing the database connection...')
       await this.connection.close()
-      debug('Done closing the connection')
+      system.debug('Done closing the connection', { label })
     }
 
     if (this.promServer) {
       this.promServer.close()
     }
-    debug(`Exiting`)
+    system.debug(`Exiting`, { label })
     // force all pending promises and open ports to exit
     process.exit()
   }

@@ -4,7 +4,6 @@ import { getRepository, EntityManager } from 'typeorm'
 import { IProcessorState, IStateKeeper } from './IStateKeeper'
 import { getProcessorSource, IProcessorSource } from '../ingest'
 
-import Debug from 'debug'
 import pThrottle from 'p-throttle'
 import { eventEmitter, ProcessorEvents } from '../start/processor-events'
 import { getConfig as conf, getManifest } from '../start/config'
@@ -12,7 +11,7 @@ import { isInRange, Range, parseEventId, system } from '../util'
 import { formatEventId, SubstrateEvent } from '@subsquid/hydra-common'
 import { IndexerStatus } from '.'
 import { validateIndexerVersion } from './version'
-const debug = Debug('hydra-processor:processor-state-handler')
+const label = 'hydra-processor:processor-state-handler'
 
 export class StateKeeper implements IStateKeeper {
   private processorState!: IProcessorState
@@ -139,10 +138,11 @@ export function initState(
   )
 
   if (lastState === undefined) {
-    debug(
+    system.debug(
       `No saved state has been found, setting lastScannedBlock to ${
         range.from - 1
-      }`
+      }`,
+      { label }
     )
     return {
       lastScannedBlock: range.from - 1,

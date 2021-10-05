@@ -1,14 +1,14 @@
 import { getRepository, Connection, createConnection } from 'typeorm'
 
 import { ProcessedEventsLogEntity } from '../entities/ProcessedEventsLogEntity'
-import Debug from 'debug'
+import { system } from '../util'
 import config from './ormconfig'
 
-const debug = Debug('hydra-processor:dal')
+const label = 'hydra-processor:dal'
 
 export async function createDBConnection(): Promise<Connection> {
   const _config = config()
-  debug(`DB config: ${JSON.stringify(_config, null, 2)}`)
+  system.debug(`DB config: ${JSON.stringify(_config, null, 2)}`, { label })
   return createConnection(_config)
 }
 
@@ -46,7 +46,7 @@ export async function countProcessedEvents(
     .where({ processor: processorID })
     .getRawOne()!
 
-  debug(`Total events count ${String(cnt)}`)
+  system.debug(`Total events count ${String(cnt)}`, { label })
 
   return Number.parseInt(cnt) || 0
 }

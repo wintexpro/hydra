@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import { logError } from '@subsquid/hydra-common'
-import Debug from 'debug'
 
 import { IStateKeeper, getStateKeeper } from '../state'
 import { system } from '../util/log'
@@ -8,7 +7,7 @@ import { BlockData, getBlockQueue, IBlockQueue } from '../queue'
 import { eventEmitter, ProcessorEvents } from '../start/processor-events'
 import { getMappingExecutor, IMappingExecutor, isTxAware } from '../executor'
 import { getManifest } from '../start/config'
-const debug = Debug('hydra-processor:mappings-processor')
+const label = 'hydra-processor:mappings-processor'
 
 export class MappingsProcessor {
   private _started = false
@@ -42,7 +41,7 @@ export class MappingsProcessor {
       try {
         // if the event queue is empty, there're no events for mappings
         // in the requested blocks, so we simply fast-forward `lastScannedBlock`
-        debug('awaiting')
+        system.debug('awaiting', { label })
 
         const next = await this.eventQueue.blocksWithEvents().next()
 
@@ -99,7 +98,7 @@ export class MappingsProcessor {
       eventEmitter.emit(ProcessorEvents.PROCESSED_EVENT, ctx.event)
     )
 
-    debug(`Done block ${nextBlock.block.height}`)
+    system.debug(`Done block ${nextBlock.block.height}`, { label })
   }
 
   private shouldWork(): boolean {

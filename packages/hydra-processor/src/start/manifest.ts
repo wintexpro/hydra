@@ -3,7 +3,6 @@ import YamlValidator from 'yaml-validator'
 import fs from 'fs'
 import path from 'path'
 import semver from 'semver'
-import Debug from 'debug'
 import { camelCase, upperFirst, compact } from 'lodash'
 import { HandlerFunc } from './QueryEventProcessingPack'
 import { Range, parseRange } from '../util'
@@ -13,7 +12,7 @@ export const CONTEXT_CLASS_NAME = 'SubstrateEvent'
 export const EVENT_SUFFIX = 'Event'
 export const CALL_SUFFIX = 'Call'
 
-const debug = Debug('hydra-processor:manifest')
+const label = 'hydra-processor:manifest'
 
 const manifestValidatorOptions = {
   structure: {
@@ -188,7 +187,9 @@ function validate(parsed: MappingsDefInput): void {
 }
 
 function buildMappingsDef(parsed: MappingsDefInput): MappingsDef {
-  debug(`Parsed mappings def: ${JSON.stringify(parsed, null, 2)}`)
+  system.debug(`Parsed mappings def: ${JSON.stringify(parsed, null, 2)}`, {
+    label,
+  })
   const {
     mappingsModule,
     range,

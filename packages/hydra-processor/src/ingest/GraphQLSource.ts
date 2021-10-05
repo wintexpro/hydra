@@ -4,7 +4,6 @@ import {
   SubstrateEvent,
   SubstrateExtrinsic,
 } from '@subsquid/hydra-common'
-import Debug from 'debug'
 import { GraphQLClient } from 'graphql-request'
 import { compact } from 'lodash'
 import { getConfig as conf } from '../start/config'
@@ -13,8 +12,9 @@ import { quotedJoin } from '../util/utils'
 import { IProcessorSource } from './'
 import { IndexerQuery } from './IProcessorSource'
 import pRetry from 'p-retry'
+import { system } from '../util'
 
-const debug = Debug('hydra-processor:graphql-source')
+const label = 'hydra-processor:graphql-source'
 
 type SubstrateType = SubstrateBlock | SubstrateEvent | SubstrateExtrinsic
 
@@ -47,7 +47,7 @@ export class GraphQLSource implements IProcessorSource {
 
   constructor() {
     const _endpoint = conf().INDEXER_ENDPOINT_URL
-    debug(`Using Indexer API endpoint ${_endpoint}`)
+    system.debug(`Using Indexer API endpoint ${_endpoint}`, { label })
     this.graphClient = new GraphQLClient(_endpoint)
     this.blockCache = new FIFOCache<number, SubstrateBlock>(
       conf().BLOCK_CACHE_CAPACITY
@@ -73,7 +73,7 @@ export class GraphQLSource implements IProcessorSource {
     }
   ): Promise<{ [K in keyof typeof queries]: SubstrateEvent[] }> {
     const query = collectQueries(queries)
-    if (conf().VERBOSE) debug(`GraphqQL Query: ${query}`)
+    if (conf().VERBOSE) system.debug(`GraphqQL Query: ${query}`, { label })
 
     // const raw = await this.graphClient.request<
     //   { [K in keyof typeof queries]: SubstrateEvent[] }
@@ -83,14 +83,15 @@ export class GraphQLSource implements IProcessorSource {
       { [K in keyof typeof queries]: SubstrateEvent[] }
     >(query)
 
-    debug(
+    system.debug(
       `Fetched ${Object.keys(raw).reduce(
         (total, k) => total + raw[k as keyof typeof raw].length,
         0
       )} events`
     )
 
-    if (conf().VERBOSE) debug(`Results: ${JSON.stringify(raw, null, 2)}`)
+    if (conf().VERBOSE)
+      system.debug(`Results: ${JSON.stringify(raw, null, 2)}`, { label })
 
     return raw as {
       [K in keyof typeof queries]: SubstrateEvent[]
@@ -117,21 +118,23 @@ export class GraphQLSource implements IProcessorSource {
     if (block !== undefined) {
       return block
     }
-    debug(`WARNING: block cache miss: ${blockNumber}`)
+    system.debug(`WARNING: block cache miss: ${blockNumber}`, { label })
     await this.fetchBlocks([blockNumber])
     return this.blockCache.get(blockNumber) as SubstrateBlock
   }
 
   async fetchBlocks(heights: number[]): Promise<SubstrateBlock[]> {
-    if (conf().VERBOSE) debug(`Fetching blocks: ${JSON.stringify(heights)}`)
+    if (conf().VERBOSE)
+      system.debug(`Fetching blocks: ${JSON.stringify(heights)}`, { label })
 
     const cached = compact(heights.map((h) => this.blockCache.get(h)))
 
-    if (conf().VERBOSE) debug(`Cached blocks: ${JSON.stringify(cached)}`)
+    if (conf().VERBOSE)
+      system.debug(`Cached blocks: ${JSON.stringify(cached)}`, { label })
 
     const toFetch = heights.filter((h) => this.blockCache.get(h) === undefined)
     if (toFetch.length === 0) {
-      debug(`All ${heights.length} blocks are cached.`)
+      system.debug(`All ${heights.length} blocks are cached.`, { label })
       return cached
     }
 
@@ -158,7 +161,7 @@ export class GraphQLSource implements IProcessorSource {
       this.blockCache.put(b.height, b)
     }
 
-    debug(`Fetched and cached ${result.blocks.length} blocks`)
+    system.debug(`Fetched and cached ${result.blocks.length} blocks`, { label })
 
     return [...cached, ...result.blocks].sort()
   }
@@ -180,12 +183,14 @@ export class GraphQLSource implements IProcessorSource {
   ): Promise<T> {
     const raw = await pRetry(() => this.graphClient.request<T>(query), {
       retries: conf().INDEXER_CALL_RETRIES,
-      onFailedAttempt: (i) =>
-        debug(
+      onFailedAttempt: (i) => {
+        system.debug(
           `Failed to connect to the indexer endpoint "${
             conf().INDEXER_ENDPOINT_URL
-          }" after ${i.attemptNumber} attempts. Retries left: ${i.retriesLeft}`
-        ),
+          }" after ${i.attemptNumber} attempts. Retries left: ${i.retriesLeft}`,
+          { label }
+        )
+      },
     })
 
     return JSON.parse(JSON.stringify(raw), (k, v) => {

@@ -2,31 +2,34 @@ import { format, transports, loggers, Logger } from 'winston'
 
 const isLogToConsole = process.env.CONSOLE === 'true'
 
+const systemFormat = format.printf(({ level, message, label }) => {
+  return `['SYSTEM'] ${level} ${label || ''}: ${message}`
+})
+
+const userFormat = format.printf(({ level, message, label }) => {
+  return `['USER'] ${level} ${label || ''}: ${message}`
+})
+
 loggers.add('system', {
   levels: {
     error: 0,
     warn: 1,
     info: 3,
+    debug: 4,
   },
+  level: 'debug',
   transports: [
     isLogToConsole // TODO
       ? new transports.Console({
           format: format.combine(
             format.colorize(),
             format.simple(),
-            format.label({ label: 'SYSTEM' }),
-            format.printf(({ level, message, label }) => {
-              return `[${label}] ${level}: ${message}`
-            })
+            systemFormat
           ),
         })
       : new transports.File({
           filename: 'system.log',
-          format: format.combine(
-            format.simple(),
-            format.splat(),
-            format.label({ label: 'SYSTEM' }) // TODO ставить метку, когда пишем в консоль
-          ),
+          format: format.combine(format.simple(), format.splat(), systemFormat),
         }),
   ],
 })
@@ -35,26 +38,21 @@ loggers.add('user', {
     error: 0,
     warn: 1,
     info: 3,
+    debug: 4,
   },
+  level: 'debug',
   transports: [
     isLogToConsole // TODO
       ? new transports.Console({
           format: format.combine(
             format.colorize(),
             format.simple(),
-            format.label({ label: 'USER' }),
-            format.printf(({ level, message, label }) => {
-              return `[${label}] ${level}: ${message}`
-            })
+            userFormat
           ),
         })
       : new transports.File({
           filename: 'user.log',
-          format: format.combine(
-            format.simple(),
-            format.splat(),
-            format.label({ label: 'USER' }) // TODO ставить метку, когда пишем в консоль
-          ),
+          format: format.combine(format.simple(), format.splat(), userFormat),
         }),
   ],
 })

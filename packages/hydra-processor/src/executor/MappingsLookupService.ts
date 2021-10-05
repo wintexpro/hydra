@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any  */
-import Debug from 'debug'
 import { compact } from 'lodash'
 import {
   EventHandler,
@@ -11,7 +10,7 @@ import {
 
 import { BlockData, EventData, Kind } from '../queue'
 import { getConfig as conf } from '../start/config'
-import { isInRange } from '../util'
+import { isInRange, system } from '../util'
 import {
   MappingContext,
   EventContext,
@@ -19,7 +18,7 @@ import {
   ExecContext,
 } from '@subsquid/hydra-common'
 import { IMappingsLookup, BlockMappings } from './IMappingsLookup'
-const debug = Debug('hydra-processor:handler-lookup-service')
+const label = 'hydra-processor:handler-lookup-service'
 
 // export function isBlockHookContext(
 //   context: ExecContext
@@ -51,7 +50,7 @@ export class MappingsLookupService implements IMappingsLookup {
       this.events[name] ? this.events[name].push(h) : (this.events[name] = [h])
     })
 
-    debug(
+    system.debug(
       `The following events will be processed: ${JSON.stringify(
         Object.keys(this.events),
         null,
@@ -66,7 +65,7 @@ export class MappingsLookupService implements IMappingsLookup {
         : (this.extrinsics[name] = [h])
     })
 
-    debug(
+    system.debug(
       `The following extrinsics will be processed: ${JSON.stringify(
         Object.keys(this.extrinsics),
         null,
@@ -74,14 +73,20 @@ export class MappingsLookupService implements IMappingsLookup {
       )}`
     )
 
-    debug(`Pre-hooks: ${JSON.stringify(this.mappings.preBlockHooks)}`)
-    debug(`Post-hooks: ${JSON.stringify(this.mappings.postBlockHooks)}`)
+    system.debug(`Pre-hooks: ${JSON.stringify(this.mappings.preBlockHooks)}`, {
+      label,
+    })
+    system.debug(
+      `Post-hooks: ${JSON.stringify(this.mappings.postBlockHooks)}`,
+      { label }
+    )
   }
 
   lookupHandlers(blockData: BlockData): BlockMappings {
     if (conf().VERBOSE)
-      debug(
-        `Lookup handlers, block context: ${JSON.stringify(blockData, null, 2)}`
+      system.debug(
+        `Lookup handlers, block context: ${JSON.stringify(blockData, null, 2)}`,
+        { label }
       )
 
     const filtered = {
@@ -95,7 +100,10 @@ export class MappingsLookupService implements IMappingsLookup {
     }
 
     if (conf().VERBOSE)
-      debug(`Mappings for the block: ${JSON.stringify(filtered, null, 2)}`)
+      system.debug(
+        `Mappings for the block: ${JSON.stringify(filtered, null, 2)}`,
+        { label }
+      )
 
     return filtered
   }
@@ -118,9 +126,13 @@ export class MappingsLookupService implements IMappingsLookup {
       )
     }
 
-    debug(`Cannot find a handler for ${name} and block ${blockData.block.id}`)
+    system.debug(
+      `Cannot find a handler for ${name} and block ${blockData.block.id}`,
+      { label }
+    )
 
-    if (conf().VERBOSE) debug(`Context: ${JSON.stringify(blockData, null, 2)}`)
+    if (conf().VERBOSE)
+      system.debug(`Context: ${JSON.stringify(blockData, null, 2)}`, { label })
   }
 
   async call(handler: MappingHandler, ctx: ExecContext): Promise<void> {

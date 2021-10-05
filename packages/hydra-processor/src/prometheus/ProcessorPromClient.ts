@@ -1,12 +1,12 @@
 import { Gauge, collectDefaultMetrics } from 'prom-client'
 import { IndexerStatus, IProcessorState } from '../state'
 import { SubstrateEvent, logError } from '@subsquid/hydra-common'
-import Debug from 'debug'
 import { countProcessedEvents } from '../db'
 import { eventEmitter, ProcessorEvents } from '../start/processor-events'
 import { getConfig as conf } from '../start/config'
+import { system } from '../util'
 
-const debug = Debug('index-builder:processor-prom-client')
+const label = 'index-builder:processor-prom-client'
 
 export class ProcessorPromClient {
   protected lastScannedBlock = new Gauge({
@@ -73,7 +73,9 @@ export class ProcessorPromClient {
           this.eventQueueSize.set(size)
         })
       })
-      .catch((e) => debug(`Error initializing the values: ${logError(e)}`))
+      .catch((e) =>
+        system.debug(`Error initializing the values: ${logError(e)}`, { label })
+      )
   }
 
   private async initValues(): Promise<void> {
