@@ -11,6 +11,7 @@ import { isInRange, Range, parseEventId, system } from '../util'
 import { formatEventId, SubstrateEvent } from '@subsquid/hydra-common'
 import { IndexerStatus } from '.'
 import { validateIndexerVersion } from './version'
+import { statusBarLogger } from '../util/blessed-terminal'
 const label = 'hydra-processor:processor-state-handler'
 
 export class StateKeeper implements IStateKeeper {
@@ -90,6 +91,9 @@ export class StateKeeper implements IStateKeeper {
       : getRepository('ProcessedEventsLogEntity')
 
     await repository.save(processed)
+    statusBarLogger.logProgress(
+      estimateSyncProgress(processed.lastScannedBlock, processed.indexerHead)
+    )
     eventEmitter.emit(ProcessorEvents.STATE_CHANGE, this.processorState)
   }
 
@@ -176,4 +180,20 @@ export function initState(
   throw new Error(
     `The last processed block ${lastState.lastScannedBlock} is beyond the provided block range.`
   )
+}
+
+function estimateSyncProgress(
+  lastScannedBlock: number,
+  indexerHead: number
+): number {
+  const range = getManifest().mappings.range
+  if (indexerHead === lastScannedBlock) {
+    return 100
+  } else {
+    const fullRange = (range.to || indexerHead) - (range.from || 0)
+    const blocksInOnePercent = fullRange / 100
+    const percentsFromStartToBlock =
+      (lastScannedBlock - (range.from || 0)) / blocksInOnePercent
+    return Math.floor(percentsFromStartToBlock)
+  }
 }
