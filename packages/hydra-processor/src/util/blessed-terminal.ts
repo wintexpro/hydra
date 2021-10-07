@@ -74,28 +74,21 @@ const statusBarBox = blessed.box({
   },
 })
 
-class LoggerForLogWidgets {
-  logToSystemBox(message: string | string[]) {
-    systemLog.insertBottom(message)
-    return this
-  }
-
-  logToUserBox(message: string) {
-    userLog.insertBottom(message)
-    return this
-  }
+export function logToSystemBox(message: string | string[]): void {
+  systemLog.insertBottom(message)
 }
 
-class LoggerForStatusBar {
-  logProgress(percent: number) {
-    statusBarBox.setLine(1, `${percent}%`)
-    statusBarBox.setLine(2, `${pBar(percent)}`)
-    return this
-  }
+export function logToUserBox(message: string): void {
+  userLog.insertBottom(message)
+}
+
+export function logProgress(percent: number): void {
+  statusBarBox.setLine(1, `${percent}%`)
+  statusBarBox.setLine(2, `${pBar(percent)}`)
 }
 
 // custom progress bar
-const pBar = (percent: number): string => {
+function pBar(percent: number): string {
   const width = 50
   const onePercentWidth = Number((width / 100).toPrecision(1))
   const bar = ''
@@ -103,9 +96,6 @@ const pBar = (percent: number): string => {
     .padEnd(width, '░')
   return '[' + bar + ']'
 }
-
-export const blessedLogger = new LoggerForLogWidgets()
-export const statusBarLogger = new LoggerForStatusBar()
 
 screen.append(systemLog)
 screen.append(userLog)

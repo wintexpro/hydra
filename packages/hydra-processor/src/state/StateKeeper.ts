@@ -7,11 +7,10 @@ import { getProcessorSource, IProcessorSource } from '../ingest'
 import pThrottle from 'p-throttle'
 import { eventEmitter, ProcessorEvents } from '../start/processor-events'
 import { getConfig as conf, getManifest } from '../start/config'
-import { isInRange, Range, parseEventId, system } from '../util'
+import { isInRange, Range, parseEventId, system, logProgress } from '../util'
 import { formatEventId, SubstrateEvent } from '@subsquid/hydra-common'
 import { IndexerStatus } from '.'
 import { validateIndexerVersion } from './version'
-import { statusBarLogger } from '../util/blessed-terminal'
 const label = 'hydra-processor:processor-state-handler'
 
 export class StateKeeper implements IStateKeeper {
@@ -91,7 +90,7 @@ export class StateKeeper implements IStateKeeper {
       : getRepository('ProcessedEventsLogEntity')
 
     await repository.save(processed)
-    statusBarLogger.logProgress(
+    logProgress(
       estimateSyncProgress(processed.lastScannedBlock, processed.indexerHead)
     )
     eventEmitter.emit(ProcessorEvents.STATE_CHANGE, this.processorState)
