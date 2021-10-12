@@ -10,8 +10,8 @@ const systemFormat = format.printf(({ level, message, label }) => {
 const userFormat = format.printf(({ level, message, label }) => {
   return `['USER'] ${level} ${label || ''}: ${message}`
 })
-const systemLogFileName = 'system.log'
-const userLogFileName = 'user.log'
+const systemLogFileName = `system-${Date.now()}.log`
+const userLogFileName = `user-${Date.now()}.log`
 
 loggers.add('system', {
   levels: {
@@ -61,9 +61,6 @@ loggers.add('user', {
         }),
   ],
 })
-
-truncateSync(systemLogFileName)
-truncateSync(userLogFileName)
 
 export const system = loggers.get('system')
 export const user = loggers.get('user')

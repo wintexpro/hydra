@@ -17,12 +17,15 @@ export class StateKeeper implements IStateKeeper {
   private processorState!: IProcessorState
   private indexerStatus!: IndexerStatus
   private processorSource!: IProcessorSource
+  private range!: Range
 
   constructor() {
     // this.indexerStatus = {
     //   head: -1,
     //   chainHeight: -1,
     // }
+    this.range = getManifest().mappings.range
+
     eventEmitter.on(
       ProcessorEvents.INDEXER_STATUS_CHANGE,
       (indexerStatus) => (this.indexerStatus = indexerStatus)
@@ -91,7 +94,11 @@ export class StateKeeper implements IStateKeeper {
 
     await repository.save(processed)
     logProgress(
-      estimateSyncProgress(processed.lastScannedBlock, processed.indexerHead)
+      estimateSyncProgress(
+        processed.lastScannedBlock,
+        processed.indexerHead,
+        this.range
+      )
     )
     eventEmitter.emit(ProcessorEvents.STATE_CHANGE, this.processorState)
   }
@@ -183,16 +190,18 @@ export function initState(
 
 function estimateSyncProgress(
   lastScannedBlock: number,
-  indexerHead: number
+  indexerHead: number,
+  range: Range
 ): number {
-  const range = getManifest().mappings.range
-  if (indexerHead === lastScannedBlock) {
+  const rangeFrom = range.from || 0
+  const rangeTo = range.to === Infinity ? indexerHead : range.to
+  if (indexerHead === lastScannedBlock || rangeFrom === rangeTo) {
     return 100
   } else {
-    const fullRange = (range.to || indexerHead) - (range.from || 0)
+    const fullRange = rangeTo - rangeFrom
     const blocksInOnePercent = fullRange / 100
     const percentsFromStartToBlock =
-      (lastScannedBlock - (range.from || 0)) / blocksInOnePercent
+      (lastScannedBlock - rangeFrom) / blocksInOnePercent
     return Math.floor(percentsFromStartToBlock)
   }
 }
