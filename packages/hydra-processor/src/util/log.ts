@@ -1,8 +1,21 @@
-import { truncateSync } from 'fs'
+import { copyFileSync, truncateSync } from 'fs'
 import { format, transports, loggers, Logger } from 'winston'
 
-const isLogToConsole = process.env.LOG_TO_CONSOLE === 'true'
-const isBlessedLogs = process.env.BLESSED_LOGS === 'true'
+export enum LogMode {
+  CONSOLE = 'CONSOLE',
+  FILE = 'FILE',
+  BLESSED = 'BLESSED',
+  SERVER = 'SERVER',
+}
+
+export const logMode = process.env.LOG_MODE || LogMode.FILE
+if (!Object.values(LogMode).includes(logMode as LogMode)) {
+  const errorMessage = `LOG_MODE flag: invalid value ${logMode}. Possible values: ${Object.values(
+    LogMode
+  ).join(',')}`
+  console.log(errorMessage)
+  throw new Error(errorMessage)
+}
 
 const systemFormat = format.printf(({ level, message, label }) => {
   return `['SYSTEM'] ${level} ${label || ''}: ${message}`
@@ -10,8 +23,8 @@ const systemFormat = format.printf(({ level, message, label }) => {
 const userFormat = format.printf(({ level, message, label }) => {
   return `['USER'] ${level} ${label || ''}: ${message}`
 })
-const systemLogFileName = `system-${Date.now()}.log`
-const userLogFileName = `user-${Date.now()}.log`
+export const systemLogFileName = `system.log`
+export const userLogFileName = `user.log`
 
 loggers.add('system', {
   levels: {
@@ -21,22 +34,8 @@ loggers.add('system', {
     debug: 4,
   },
   level: 'debug',
-  transports: [
-    isLogToConsole // TODO
-      ? new transports.Console({
-          format: format.combine(
-            format.colorize(),
-            format.simple(),
-            systemFormat
-          ),
-        })
-      : new transports.File({
-          filename: systemLogFileName,
-          // note: winston.stream().on() works only with json-formatted logs
-          format: format.combine(format.json(), format.splat()),
-        }),
-  ],
 })
+
 loggers.add('user', {
   levels: {
     error: 0,
@@ -45,40 +44,76 @@ loggers.add('user', {
     debug: 4,
   },
   level: 'debug',
-  transports: [
-    isLogToConsole // TODO
-      ? new transports.Console({
-          format: format.combine(
-            format.colorize(),
-            format.simple(),
-            userFormat
-          ),
-        })
-      : new transports.File({
-          filename: userLogFileName,
-          // note: winston.stream().on() works only with json-formatted logs
-          format: format.combine(format.json(), format.splat()),
-        }),
-  ],
 })
 
-export const system = loggers.get('system')
-export const user = loggers.get('user')
+const system = loggers.get('system')
+const user = loggers.get('user')
+
+if (logMode === LogMode.CONSOLE) {
+  system.configure({
+    transports: [
+      new transports.Console({
+        format: format.combine(
+          format.colorize(),
+          format.simple(),
+          systemFormat
+        ),
+      }),
+    ],
+  })
+  user.configure({
+    transports: [
+      new transports.Console({
+        format: format.combine(format.colorize(), format.simple(), userFormat),
+      }),
+    ],
+  })
+} else if (logMode === LogMode.FILE || logMode === LogMode.BLESSED) {
+  system.configure({
+    transports: [
+      new transports.File({
+        filename: systemLogFileName,
+        // note: winston.stream().on() works only with json-formatted logs
+        format: format.combine(format.json(), format.splat()),
+      }),
+    ],
+  })
+  user.configure({
+    transports: [
+      new transports.File({
+        filename: userLogFileName,
+        // note: winston.stream().on() works only with json-formatted logs
+        format: format.combine(format.json(), format.splat()),
+      }),
+    ],
+  })
+} else if (logMode === LogMode.SERVER) {
+  system.configure({
+    transports: [new transports.Console({ silent: true })],
+  })
+  user.configure({
+    transports: [
+      new transports.Console({
+        format: format.combine(format.colorize(), format.simple(), userFormat),
+      }),
+    ],
+  })
+}
+
+export function initLogFiles(): void {
+  copyFileSync(systemLogFileName, `old.${Date.now()}.${systemLogFileName}`)
+  truncateSync(systemLogFileName)
+  copyFileSync(userLogFileName, `old.${Date.now()}.${userLogFileName}`)
+  truncateSync(userLogFileName)
+}
 
 // optional blessed terminal
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 let logProgress = (_n: number): void => {
   return undefined
 }
-if (isBlessedLogs) {
+if (logMode === LogMode.BLESSED) {
   import('./blessed-terminal').then((blessed) => {
-    system.stream({ start: -1 }).on('log', function (log) {
-      blessed.logToSystemBox(log.message)
-    })
-
-    user.stream({ start: -1 }).on('log', function (log) {
-      blessed.logToUserBox(log.message)
-    })
     blessed.screen.render()
     logProgress = (percent: number): void => {
       blessed.logProgress(percent)
@@ -86,7 +121,7 @@ if (isBlessedLogs) {
   })
 }
 
-export { logProgress }
+export { logProgress, system, user }
 declare global {
   namespace NodeJS {
     interface Global {

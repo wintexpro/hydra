@@ -1,6 +1,6 @@
 import { Command, flags } from '@oclif/command'
 import { ProcessorRunner } from '../start'
-import { system } from '../util/log'
+import { system, initLogFiles, logMode, LogMode } from '../util/log'
 import dotenv from 'dotenv'
 import { logError } from '@subsquid/hydra-common'
 
@@ -24,6 +24,9 @@ export default class Run extends Command {
   }
 
   async run(): Promise<void> {
+    if (logMode === LogMode.FILE) {
+      initLogFiles()
+    }
     system.info('Starting Hydra Processor')
 
     const { flags } = this.parse(Run)

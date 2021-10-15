@@ -47,6 +47,19 @@ export class StateKeeper implements IStateKeeper {
       system.info(
         `Last block: ${this.processorState.lastScannedBlock} \t: ${syncStatus}`
       )
+
+      if (
+        this.processorState.lastScannedBlock >= 0 &&
+        this.indexerStatus.head !== undefined
+      ) {
+        logProgress(
+          estimateSyncProgress(
+            this.processorState.lastScannedBlock,
+            this.indexerStatus.head,
+            this.range
+          )
+        )
+      }
     })
 
     // additionally log every status change
@@ -93,13 +106,6 @@ export class StateKeeper implements IStateKeeper {
       : getRepository('ProcessedEventsLogEntity')
 
     await repository.save(processed)
-    logProgress(
-      estimateSyncProgress(
-        processed.lastScannedBlock,
-        processed.indexerHead,
-        this.range
-      )
-    )
     eventEmitter.emit(ProcessorEvents.STATE_CHANGE, this.processorState)
   }
 
