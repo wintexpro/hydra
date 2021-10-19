@@ -6,6 +6,28 @@ export const screen = blessed.screen({
 })
 
 const logWidgetsHeight = 70
+const systemLog = blessed.log({
+  top: '0',
+  left: '0%',
+  width: '100%',
+  height: (logWidgetsHeight + 2).toString() + '%',
+  scrollable: true,
+  alwaysScroll: true,
+  tags: false,
+  mouse: true,
+  keys: true,
+  border: {
+    type: 'line',
+  },
+  scrollbar: {
+    ch: ' ',
+  },
+  style: {
+    scrollbar: {
+      bg: 'blue',
+    },
+  },
+})
 // ---------------------------------------------------------------
 // Status Bar
 const statusBarBox = blessed.box({
@@ -27,6 +49,11 @@ const statusBarBox = blessed.box({
   },
 })
 
+export function logToSystemBox(message: string | string[]): void {
+  systemLog.insertBottom(message)
+  screen.render()
+}
+
 export function logProgress(percent: number): void {
   statusBarBox.setLine(1, `${percent}%`)
   statusBarBox.setLine(2, `${pBar(percent)}`)
@@ -43,6 +70,7 @@ function pBar(percent: number): string {
   return '[' + bar + ']'
 }
 
+screen.append(systemLog)
 screen.append(statusBarBox)
 
 // Quit on Escape, q, or Control-C.

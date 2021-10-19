@@ -89,7 +89,17 @@ if (logMode === LogMode.CONSOLE) {
   })
 } else if (logMode === LogMode.SERVER) {
   system.configure({
-    transports: [new transports.Console({ silent: true })],
+    transports: [
+      new transports.Console({ silent: true }),
+      new transports.Console({
+        level: 'error',
+        format: format.combine(
+          format.colorize(),
+          format.simple(),
+          systemFormat
+        ),
+      }),
+    ],
   })
   user.configure({
     transports: [
@@ -112,16 +122,23 @@ export function initLogFiles(): void {
 let logProgress = (_n: number): void => {
   return undefined
 }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+let logErrorToBlessed = (_m: string): void => {
+  return undefined
+}
 if (logMode === LogMode.BLESSED) {
   import('./blessed-terminal').then((blessed) => {
     blessed.screen.render()
     logProgress = (percent: number): void => {
       blessed.logProgress(percent)
     }
+    logErrorToBlessed = (message: string): void => {
+      blessed.logToSystemBox(message)
+    }
   })
 }
 
-export { logProgress, system, user }
+export { logProgress, logErrorToBlessed, system, user }
 declare global {
   namespace NodeJS {
     interface Global {

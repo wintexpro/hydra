@@ -1,6 +1,12 @@
 import { Command, flags } from '@oclif/command'
 import { ProcessorRunner } from '../start'
-import { system, initLogFiles, logMode, LogMode } from '../util/log'
+import {
+  system,
+  initLogFiles,
+  logMode,
+  LogMode,
+  logErrorToBlessed,
+} from '../util/log'
 import dotenv from 'dotenv'
 import { logError } from '@subsquid/hydra-common'
 
@@ -50,6 +56,14 @@ export default class Run extends Command {
       await processor.process()
     } catch (e) {
       system.error(`${logError(e)}`)
+      if (logMode === LogMode.BLESSED) {
+        await new Promise((resolve) => {
+          logErrorToBlessed(
+            `An error occurred, check log files for more information`
+          )
+          setTimeout(resolve, 5000)
+        })
+      }
       process.exitCode = 1
     } finally {
       system.info(`Shutting down...`)
