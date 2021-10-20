@@ -45,6 +45,7 @@ export async function balancesTransfer({
   transfer.value = value.toBigInt()
   transfer.tip = extrinsic?.tip || 0n
   transfer.insertedAt = new Date(block.timestamp)
+  transfer.extrinsicId = extrinsic?.id
 
   const fromAcc = await getOrCreate(Account, from.toString(), store)
   const toAcc = await getOrCreate(Account, to.toString(), store)

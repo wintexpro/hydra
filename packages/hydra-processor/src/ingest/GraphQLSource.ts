@@ -16,7 +16,7 @@ import { system } from '../util'
 
 const label = 'hydra-processor:graphql-source'
 
-type SubstrateType = SubstrateBlock | SubstrateEvent | SubstrateExtrinsic
+type SubstrateType = SubstrateBlock & SubstrateEvent & SubstrateExtrinsic
 
 const REVIVE_SUBSTRATE_FIELDS: Partial<
   {
@@ -252,6 +252,7 @@ export function getEventsGraphQLQuery({
     blockNumber
     blockTimestamp
     extrinsic {
+      id
       method
       section
       versionInfo
