@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 4.2.0-alpha.6 (2021-10-20)
+
+
+### Bug Fixes
+
+* **hydra-processor:** expose extrinsic id in mappings ([a5f6ec8](https://github.com/subsquid/hydra/commit/a5f6ec880861bc050b6e537b006c0a6f49b40e18))
+
+
+
 ## 4.2.0-alpha.5 (2021-10-04)
 
 
