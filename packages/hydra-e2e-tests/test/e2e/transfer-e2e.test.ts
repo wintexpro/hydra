@@ -49,6 +49,12 @@ describe('end-to-end transfer tests', () => {
   it('indexes and finds transfers', async () => {
     const transfers = await findTransfersByValue(txAmount2, blockHeight)
     expect(transfers).length.gte(1, 'The processor should find the transfer')
+    expect(transfers[0].extrinsicId).not.to.be.an(
+      'undefined',
+      'should load extrinsic id'
+    )
+    expect(transfers[0].extrinsicId?.length).gt(5, 'should be a proper id')
+
     expect(transfers[0].toAccount).not.to.be.an(
       'undefined',
       'should load fromAccount field'

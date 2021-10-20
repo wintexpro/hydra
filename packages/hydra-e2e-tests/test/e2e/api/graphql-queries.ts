@@ -30,6 +30,7 @@ export const FIND_TRANSFER_BY_VALUE = gql`
       toAccount {
         hex
       }
+      extrinsicId
     }
   }
 `

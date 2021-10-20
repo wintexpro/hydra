@@ -21,6 +21,7 @@ export interface Transfer {
   from: string
   to: string
   block: number
+  extrinsicId?: string
   fromAccount?: { hex: string }
   toAccount?: { hex: string }
 }
@@ -61,6 +62,7 @@ export async function findTransfersByValue(
       block: number
       fromAccount: { hex: string }
       toAccount: { hex: string }
+      extrinsicId: string
     }[]
   }>(FIND_TRANSFER_BY_VALUE, { value: value.toString(), block })
 
