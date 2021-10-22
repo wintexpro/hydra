@@ -5,7 +5,7 @@ import path from 'path'
 import semver from 'semver'
 import { camelCase, upperFirst, compact } from 'lodash'
 import { HandlerFunc } from './QueryEventProcessingPack'
-import { Range, parseRange } from '../util'
+import { Range, parseRange, system } from '../util'
 
 export const STORE_CLASS_NAME = 'DatabaseManager'
 export const CONTEXT_CLASS_NAME = 'SubstrateEvent'
