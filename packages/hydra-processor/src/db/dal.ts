@@ -8,7 +8,6 @@ const label = 'hydra-processor:dal'
 
 export async function createDBConnection(): Promise<Connection> {
   const _config = config()
-  system.debug(`DB config: ${JSON.stringify(_config, null, 2)}`, { label })
   return createConnection(_config)
 }
 

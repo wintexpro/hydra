@@ -13,16 +13,17 @@ export default class Tail extends Command {
   async run(): Promise<void> {
     console.log('Running tail for Hydra Processor')
     const { flags } = this.parse(Tail)
-
-    if (flags.type !== 'system' && flags.type !== 'user') {
-      console.log(`Invalid log type ${flags.type}`)
-      return
+    try {
+      if (flags.type !== 'system' && flags.type !== 'user') {
+        throw Error(`Invalid log type ${flags.type}`)
+      }
+      const fileName = userLogFileName
+      const spawn = require('child_process').spawn
+      spawn('tail', ['-f', fileName], { stdio: 'inherit' })
+    } catch (e) {
+      console.error(`Error: ${(e as { message: string }).message}`)
+      console.log(`Shutting down...`)
+      process.exit(1)
     }
-    const fileName = userLogFileName
-    const spawn = require('child_process').spawn
-    const tail = spawn('tail', ['-f', fileName])
-    tail.stdout.on('data', function (data: Buffer) {
-      console.log(`${data.toString('utf8')}`)
-    })
   }
 }
