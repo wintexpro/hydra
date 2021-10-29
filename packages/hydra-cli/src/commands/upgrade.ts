@@ -1,5 +1,5 @@
 import { Command, flags } from '@oclif/command'
-import { upgradeDeployment } from '../../rest-client/routes/upgradeDeployment'
+import { upgradeDeployment } from '../rest-client/routes/upgradeDeployment'
 import Debug from 'debug'
 import simpleGit, { SimpleGit, SimpleGitOptions } from 'simple-git'
 
