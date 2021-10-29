@@ -1,13 +1,18 @@
 import { Command, flags } from '@oclif/command'
 import { cli } from 'cli-ux'
-import { deploymentList } from '../../rest-client/routes/deployments'
+import { deploymentVersionList } from '../../rest-client/routes/deploymentVersions'
 import Debug from 'debug'
 
-const debug = Debug('qnode-cli:deployment-list')
+const debug = Debug('qnode-cli:deployment-version-list')
+
 export default class Ls extends Command {
-  static description = 'Deployments list'
+  static description = 'Deployment version list'
 
   static flags = {
+    'deployment-name': flags.string({
+      description: 'deployment name',
+      required: true,
+    }),
     'no-truncate': flags.boolean({
       description: 'no truncate data in columns: true by default',
       required: false,
@@ -19,20 +24,18 @@ export default class Ls extends Command {
     const { flags } = this.parse(Ls)
     debug(`Parsed flags: ${JSON.stringify(flags, null, 2)}`)
     const noTruncate = flags['no-truncate']
+    const deploymentName = flags['deployment-name']
 
-    const deployments = await deploymentList()
+    const deployments = await deploymentVersionList(deploymentName)
     if (deployments) {
       cli.table(
         deployments,
         {
-          id: {},
-          status: {},
-          deployment: {},
-          aliasVersion: { header: 'Alias version' },
-          deploymentVersion: { header: 'deployment version' },
-          artifactUrl: { header: 'artifactUrl' },
-          deploymentUrl: { header: 'deploymentUrl' },
+          name: {},
+          version: { header: 'Alias version' },
           tag: {},
+          artifactUrl: { header: 'artifactUrl' },
+          status: {},
           createdAt: { header: 'Created at' },
         },
         { 'no-truncate': noTruncate }
