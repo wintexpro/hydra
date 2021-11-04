@@ -1,5 +1,5 @@
 // TODO: rewrite!
-/*import { expect, test } from '@oclif/test'
+/* import { expect, test } from '@oclif/test'
 import { baseUrl } from '../rest-client/baseUrl'
 import simpleGit from 'simple-git'
 import * as creds from '../creds'
@@ -63,4 +63,4 @@ describe('deploy command', () => {
       )
     )
     .it('show error message when broken creds')
-})*/
+}) */
