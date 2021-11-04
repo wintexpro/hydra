@@ -5,7 +5,7 @@ import { destroy } from '../rest-client/routes/destroy'
 const debug = Debug('qnode-cli:destroy')
 
 export default class Destroy extends Command {
-  static description = 'Upgrade deployment'
+  static description = 'Destroy deployment'
 
   static flags = {
     name: flags.string({
