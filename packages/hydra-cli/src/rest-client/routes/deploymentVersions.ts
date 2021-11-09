@@ -9,6 +9,7 @@ export type DeploymentVersionListResponse = {
   version: number
   tag: string
   artifactUrl: string
+  deploymentUrl: string
   status: DeploymentVersionStatus
   createdAt: number
 }

@@ -1,10 +1,10 @@
 import { Command, flags } from '@oclif/command'
 import Debug from 'debug'
-import { destroy } from '../rest-client/routes/destroy'
+import { destroy } from '../../rest-client/routes/destroy'
 
-const debug = Debug('qnode-cli:destroy')
+const debug = Debug('qnode-cli:delete')
 
-export default class Destroy extends Command {
+export default class Delete extends Command {
   static description = 'Destroy deployment'
 
   static flags = {
@@ -21,7 +21,7 @@ export default class Destroy extends Command {
   }
 
   async run(): Promise<void> {
-    const { flags } = this.parse(Destroy)
+    const { flags } = this.parse(Delete)
     debug(`Parsed flags: ${JSON.stringify(flags, null, 2)}`)
     const deploymentName = flags.name
     const version = flags.version
