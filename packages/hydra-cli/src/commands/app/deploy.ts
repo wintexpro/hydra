@@ -1,5 +1,7 @@
 import { Command, flags } from '@oclif/command'
 import simpleGit, {
+  DefaultLogFields,
+  LogOptions,
   RemoteWithRefs,
   SimpleGit,
   SimpleGitOptions,
@@ -55,41 +57,35 @@ export default class Deploy extends Command {
     })
 
     const currentBranch = (await git.branch()).current
-
-    // show warning if head origin commit is not the same as the
-    // local origin commit or there are unstaged or uncomitted changes
     const status = await git.status()
-    const diffs = await git.diffSummary([
+    if (status.files && status.files.length) {
+      this.error(`There are unstaged or uncomitted changes`)
+    }
+    await git.fetch()
+    const localCommit = await git.log([
+      '-n',
+      1,
       currentBranch,
-      `${remoteUrl.name}`,
-      `${currentBranch}`,
-    ])
+    ] as LogOptions<DefaultLogFields>)
+    const remoteCommit = await git.log([
+      '-n',
+      1,
+      `${remoteUrl.name}/${currentBranch}`,
+    ] as LogOptions<DefaultLogFields>)
     if (
-      (status.files && status.files.length) ||
-      diffs.changed ||
-      diffs.deletions ||
-      diffs.insertions ||
-      (diffs.files && diffs.files.length)
+      !localCommit.latest ||
+      !remoteCommit.latest ||
+      localCommit.latest.hash !== remoteCommit.latest.hash
     ) {
-      this.warn(
-        `Head origin commit is not the same as the local origin commit or there are unstaged or uncomitted changes`
+      this.error(
+        `Head origin commit is not the same as the local origin commit`
       )
-      this.log(`Are you sure?`)
-      const selected = await cliSelect({
-        cleanup: false,
-        values: ['yes', 'no'],
-      }).catch(() => {
-        this.error('Canceled', { code: '1' })
-      })
-      if (selected.value === 'no') {
-        this.error('Canceled', { code: '1' })
-      }
     }
 
     this.log(`🦑 Releasing the Squid at ${remoteUrl.name}`)
     const message = await deploy(
       deploymentName,
-      `${remoteUrl.refs.fetch}#${currentBranch}`
+      `${remoteUrl.refs.fetch}#${remoteCommit.latest.hash}`
     )
     this.log(message)
   }
