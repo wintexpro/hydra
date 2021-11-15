@@ -9,6 +9,7 @@ import simpleGit, {
 import Debug from 'debug'
 import { deploy } from '../../rest-client/routes/deploy'
 import cliSelect from 'cli-select'
+import { upgradeDeployment } from '../../rest-client/routes/upgrade'
 
 const debug = Debug('qnode-cli:deploy')
 const options: Partial<SimpleGitOptions> = {
@@ -26,12 +27,42 @@ export default class Deploy extends Command {
       description: 'Deployment name',
       required: true,
     }),
+    version: flags.string({
+      char: 'v',
+      description: 'version name',
+      required: true,
+    }),
+    description: flags.string({
+      char: 'd',
+      description: 'description',
+      required: false,
+    }),
+    logo: flags.string({
+      char: 'l',
+      description: 'logo url',
+      required: false,
+    }),
+    source: flags.string({
+      char: 's',
+      description: 'source code url',
+      required: true,
+    }),
+    website: flags.string({
+      char: 'w',
+      description: 'website url',
+      required: false,
+    }),
   }
 
   async run(): Promise<void> {
     const { flags } = this.parse(Deploy)
     debug(`Parsed flags: ${JSON.stringify(flags, null, 2)}`)
     const deploymentName = flags.name
+    const version = flags.version
+    const description = flags.description
+    const logoUrl = flags.logo
+    const sourceCodeUrl = flags.source
+    const websiteUrl = flags.website
 
     let remoteUrl: RemoteWithRefs
     const remotes = await git.getRemotes(true)
@@ -56,21 +87,28 @@ export default class Deploy extends Command {
       })
     })
 
-    const currentBranch = (await git.branch()).current
+    const branch = (await git.branch()).current
     const status = await git.status()
     if (status.files && status.files.length) {
-      this.error(`There are unstaged or uncomitted changes`)
+      this.error(`There are unstaged or uncommitted changes`)
     }
     await git.fetch()
+    const remoteBranchRefs = await git.listRemote([
+      `${remoteUrl.name}`,
+      `${branch}`,
+    ])
+    if (remoteBranchRefs === '') {
+      this.error(`Remote branch "${remoteUrl.name}/${branch}" not exists`)
+    }
     const localCommit = await git.log([
       '-n',
       1,
-      currentBranch,
+      branch,
     ] as LogOptions<DefaultLogFields>)
     const remoteCommit = await git.log([
       '-n',
       1,
-      `${remoteUrl.name}/${currentBranch}`,
+      `${remoteUrl.name}/${branch}`,
     ] as LogOptions<DefaultLogFields>)
     if (
       !localCommit.latest ||
@@ -83,10 +121,19 @@ export default class Deploy extends Command {
     }
 
     this.log(`🦑 Releasing the Squid at ${remoteUrl.name}`)
-    const message = await deploy(
+    const createDeploymentMessage = await deploy(
       deploymentName,
+      sourceCodeUrl,
+      description,
+      logoUrl,
+      websiteUrl
+    )
+    this.log(createDeploymentMessage)
+    const upgradeDeploymentMessage = await upgradeDeployment(
+      deploymentName,
+      version,
       `${remoteUrl.refs.fetch}#${remoteCommit.latest.hash}`
     )
-    this.log(message)
+    this.log(upgradeDeploymentMessage)
   }
 }

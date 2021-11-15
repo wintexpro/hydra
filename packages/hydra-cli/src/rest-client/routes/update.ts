@@ -4,24 +4,24 @@ import { request } from '../request'
 
 export type ResponseBody = {
   id: string
-  status: 'CREATED' | 'DEPLOYING' | 'ERROR' | 'OK'
   name: string
-  artifactUrl: string
-  version: number
+  description: string
+  logoUrl: string
+  sourceCodeUrl: string
+  websiteUrl: string
 }
 
-export async function deploy(
+export async function updateDeployment(
   deploymentName: string,
-  sourceCodeUrl: string,
   description?: string,
   logoUrl?: string,
+  sourceCodeUrl?: string,
   websiteUrl?: string
 ): Promise<string | undefined> {
-  const apiUrl = `${baseUrl}/client/project`
+  const apiUrl = `${baseUrl}/client/project/${deploymentName}`
   const response = await request(apiUrl, {
-    method: 'post',
+    method: 'put',
     body: JSON.stringify({
-      name: deploymentName,
       description,
       logoUrl,
       sourceCodeUrl,
@@ -35,6 +35,6 @@ export async function deploy(
   })
   const responseBody = await response.json()
   if (response.status === 200) {
-    return `Created deployment with name ${responseBody.name}`
+    return `Updated deployment with name ${responseBody.name}`
   }
 }
