@@ -4,13 +4,15 @@ import { request } from '../request'
 
 export async function upgradeDeployment(
   deploymentName: string,
+  version: string,
   artifactUrl: string
 ): Promise<string | undefined> {
-  const apiUrl = `${baseUrl}/client/deployment/${deploymentName}`
+  const apiUrl = `${baseUrl}/client/project/${deploymentName}/version`
   const response = await request(apiUrl, {
-    method: 'put',
+    method: 'post',
     body: JSON.stringify({
       artifactUrl,
+      version,
     }),
     headers: {
       // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -20,7 +22,7 @@ export async function upgradeDeployment(
   })
   const responseBody = await response.json()
   if (response.status === 200) {
-    return `Upgraded deployment with name ${responseBody.name}`
+    return `Created new version of deployment with name ${responseBody.name}, version: ${version}`
   } else if (response.status === 404) {
     return 'Deployment not exists'
   }

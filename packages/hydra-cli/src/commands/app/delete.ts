@@ -1,6 +1,9 @@
 import { Command, flags } from '@oclif/command'
 import Debug from 'debug'
-import { destroy } from '../../rest-client/routes/destroy'
+import {
+  destroyDeployment,
+  destroyVersion,
+} from '../../rest-client/routes/destroy'
 
 const debug = Debug('qnode-cli:delete')
 
@@ -16,7 +19,7 @@ export default class Delete extends Command {
     version: flags.integer({
       char: 'v',
       description: 'Deployment version',
-      required: true,
+      required: false,
     }),
   }
 
@@ -26,7 +29,12 @@ export default class Delete extends Command {
     const deploymentName = flags.name
     const version = flags.version
 
-    const message = await destroy(deploymentName, version)
+    let message
+    if (version) {
+      message = await destroyVersion(deploymentName, version)
+    } else {
+      message = await destroyDeployment(deploymentName)
+    }
     this.log(message)
   }
 }

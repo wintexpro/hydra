@@ -2,12 +2,11 @@ import { baseUrl } from '../baseUrl'
 import { getCreds } from '../../creds'
 import { request } from '../request'
 
-export type DeploymentVersionStatus = 'CREATED' | 'BUILDING' | 'ERROR' | 'OK'
+type DeploymentVersionStatus = 'CREATED' | 'BUILDING' | 'ERROR' | 'OK'
 
 export type DeploymentVersionListResponse = {
   name: string
-  version: number
-  tag: string
+  version: string
   artifactUrl: string
   deploymentUrl: string
   status: DeploymentVersionStatus
@@ -17,7 +16,7 @@ export type DeploymentVersionListResponse = {
 export async function deploymentVersionList(
   deploymentName: string
 ): Promise<DeploymentVersionListResponse[] | undefined> {
-  const apiUrl = `${baseUrl}/client/deployment/${deploymentName}/versions`
+  const apiUrl = `${baseUrl}/client/project/${deploymentName}/versions`
   const response = await request(apiUrl, {
     method: 'get',
     headers: {
