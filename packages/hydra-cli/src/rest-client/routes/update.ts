@@ -11,14 +11,14 @@ export type ResponseBody = {
   websiteUrl: string
 }
 
-export async function updateDeployment(
-  deploymentName: string,
+export async function updateApp(
+  name: string,
   description?: string,
   logoUrl?: string,
   sourceCodeUrl?: string,
   websiteUrl?: string
 ): Promise<string | undefined> {
-  const apiUrl = `${baseUrl}/client/project/${deploymentName}`
+  const apiUrl = `${baseUrl}/client/project/${name}`
   const response = await request(apiUrl, {
     method: 'put',
     body: JSON.stringify({
@@ -35,6 +35,6 @@ export async function updateDeployment(
   })
   const responseBody = await response.json()
   if (response.status === 200) {
-    return `Updated deployment with name ${responseBody.name}`
+    return `Updated app with name ${responseBody.name}`
   }
 }

@@ -1,6 +1,6 @@
 import { Command, flags } from '@oclif/command'
 import Debug from 'debug'
-import { deploy } from '../../rest-client/routes/deploy'
+import { create } from '../../rest-client/routes/create'
 
 const debug = Debug('qnode-cli:create')
 
@@ -10,7 +10,7 @@ export default class Create extends Command {
   static flags = {
     name: flags.string({
       char: 'n',
-      description: 'Deployment name',
+      description: 'app name',
       required: true,
     }),
     description: flags.string({
@@ -38,19 +38,19 @@ export default class Create extends Command {
   async run(): Promise<void> {
     const { flags } = this.parse(Create)
     debug(`Parsed flags: ${JSON.stringify(flags, null, 2)}`)
-    const deploymentName = flags.name
+    const appName = flags.name
     const description = flags.description
     const logoUrl = flags.logo
     const sourceCodeUrl = flags.source
     const websiteUrl = flags.website
 
-    const createDeploymentMessage = await deploy(
-      deploymentName,
+    const createAppMessage = await create(
+      appName,
       sourceCodeUrl,
       description,
       logoUrl,
       websiteUrl
     )
-    this.log(createDeploymentMessage)
+    this.log(createAppMessage)
   }
 }

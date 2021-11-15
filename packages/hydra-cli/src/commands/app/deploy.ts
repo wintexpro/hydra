@@ -1,5 +1,5 @@
 import { Command, flags } from '@oclif/command'
-import { upgradeDeployment } from '../../rest-client/routes/upgrade'
+import { deploy } from '../../rest-client/routes/deploy'
 import Debug from 'debug'
 import simpleGit, {
   DefaultLogFields,
@@ -18,17 +18,17 @@ const options: Partial<SimpleGitOptions> = {
 const git: SimpleGit = simpleGit(options)
 
 export default class Deploy extends Command {
-  static description = 'Deploy a deployment version'
+  static description = 'Create a deployment'
 
   static flags = {
     name: flags.string({
       char: 'n',
-      description: 'Deployment name',
+      description: 'app name',
       required: true,
     }),
     version: flags.string({
       char: 'v',
-      description: 'Version name',
+      description: 'version name',
       required: true,
     }),
   }
@@ -36,7 +36,7 @@ export default class Deploy extends Command {
   async run(): Promise<void> {
     const { flags } = this.parse(Deploy)
     debug(`Parsed flags: ${JSON.stringify(flags, null, 2)}`)
-    const deploymentName = flags.name
+    const appName = flags.name
     const version = flags.version
 
     let remoteUrl: RemoteWithRefs
@@ -95,8 +95,8 @@ export default class Deploy extends Command {
     }
 
     this.log(`🦑 Releasing the Squid at ${remoteUrl.name}`)
-    const message = await upgradeDeployment(
-      deploymentName,
+    const message = await deploy(
+      appName,
       version,
       `${remoteUrl.refs.fetch}#${remoteCommit.latest.hash}`
     )

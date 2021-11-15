@@ -2,11 +2,11 @@ import { baseUrl } from '../baseUrl'
 import { getCreds } from '../../creds'
 import { request } from '../request'
 
-export async function destroyVersion(
-  deploymentName: string,
+export async function destroyDeployment(
+  appName: string,
   version: number
 ): Promise<string | undefined> {
-  const apiUrl = `${baseUrl}/client/project/${deploymentName}/version?version=${version}`
+  const apiUrl = `${baseUrl}/client/project/${appName}/version?version=${version}`
   const response = await request(apiUrl, {
     method: 'delete',
     headers: {
@@ -17,14 +17,12 @@ export async function destroyVersion(
   })
   const responseBody = await response.json()
   if (response.status === 200) {
-    return `Destroyed deployment version with name ${responseBody.projectName}`
+    return `Destroyed deployment with name ${responseBody.projectName}`
   }
 }
 
-export async function destroyDeployment(
-  deploymentName: string
-): Promise<string | undefined> {
-  const apiUrl = `${baseUrl}/client/project/${deploymentName}`
+export async function destroyApp(name: string): Promise<string | undefined> {
+  const apiUrl = `${baseUrl}/client/project/${name}`
   const response = await request(apiUrl, {
     method: 'delete',
     headers: {
@@ -35,6 +33,6 @@ export async function destroyDeployment(
   })
   const responseBody = await response.json()
   if (response.status === 200) {
-    return `Destroyed deployment version with name ${responseBody.name}`
+    return `Destroyed app with name ${responseBody.name}`
   }
 }

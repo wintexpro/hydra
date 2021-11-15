@@ -2,19 +2,21 @@ import { baseUrl } from '../baseUrl'
 import { getCreds } from '../../creds'
 import { request } from '../request'
 
-type DeploymentListResponse = {
-  id: number
+type DeploymentStatus = 'CREATED' | 'BUILDING' | 'ERROR' | 'OK'
+
+export type DeploymentListResponse = {
   name: string
-  description: string
-  logoUrl: string
-  sourceCodeUrl: string
-  websiteUrl: string
+  version: string
+  artifactUrl: string
+  deploymentUrl: string
+  status: DeploymentStatus
+  createdAt: number
 }
 
-export async function deploymentList(): Promise<
-  DeploymentListResponse[] | undefined
-> {
-  const apiUrl = `${baseUrl}/client/project`
+export async function deploymentList(
+  appName: string
+): Promise<DeploymentListResponse[] | undefined> {
+  const apiUrl = `${baseUrl}/client/project/${appName}/versions`
   const response = await request(apiUrl, {
     method: 'get',
     headers: {

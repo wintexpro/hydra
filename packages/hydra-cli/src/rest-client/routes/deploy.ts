@@ -2,30 +2,17 @@ import { baseUrl } from '../baseUrl'
 import { getCreds } from '../../creds'
 import { request } from '../request'
 
-export type ResponseBody = {
-  id: string
-  status: 'CREATED' | 'DEPLOYING' | 'ERROR' | 'OK'
-  name: string
-  artifactUrl: string
-  version: number
-}
-
 export async function deploy(
-  deploymentName: string,
-  sourceCodeUrl: string,
-  description?: string,
-  logoUrl?: string,
-  websiteUrl?: string
+  name: string,
+  version: string,
+  artifactUrl: string
 ): Promise<string | undefined> {
-  const apiUrl = `${baseUrl}/client/project`
+  const apiUrl = `${baseUrl}/client/project/${name}/version`
   const response = await request(apiUrl, {
     method: 'post',
     body: JSON.stringify({
-      name: deploymentName,
-      description,
-      logoUrl,
-      sourceCodeUrl,
-      websiteUrl,
+      artifactUrl,
+      version,
     }),
     headers: {
       // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -35,6 +22,8 @@ export async function deploy(
   })
   const responseBody = await response.json()
   if (response.status === 200) {
-    return `Created deployment with name ${responseBody.name}`
+    return `Created new version of deployment with name ${responseBody.name}, version: ${version}`
+  } else if (response.status === 404) {
+    return 'App not exists'
   }
 }

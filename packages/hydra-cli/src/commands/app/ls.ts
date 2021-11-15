@@ -1,21 +1,22 @@
 import { Command, flags } from '@oclif/command'
 import { cli } from 'cli-ux'
-import { deploymentList } from '../../rest-client/routes/deployments'
+import { appList } from '../../rest-client/routes/apps'
 import Debug from 'debug'
-import { deploymentVersionList } from '../../rest-client/routes/deploymentVersions'
+import { deploymentList } from '../../rest-client/routes/deployments'
 
 const debug = Debug('qnode-cli:deployment-list')
 export default class Ls extends Command {
-  static description = 'Deployments list'
+  static description = 'App or deployments list'
 
   static flags = {
-    'deployment-name': flags.string({
+    name: flags.string({
       char: 'n',
-      description: 'deployment name',
+      description: 'app name',
       required: false,
     }),
     truncate: flags.boolean({
-      description: 'no truncate data in columns: false by default',
+      char: 't',
+      description: 'truncate data in columns: false by default',
       required: false,
       default: false,
     }),
@@ -25,13 +26,13 @@ export default class Ls extends Command {
     const { flags } = this.parse(Ls)
     debug(`Parsed flags: ${JSON.stringify(flags, null, 2)}`)
     const noTruncate = !flags.truncate
-    const deploymentName = flags['deployment-name']
+    const appName = flags.name
 
-    if (deploymentName) {
-      const deploymentVersions = await deploymentVersionList(deploymentName)
-      if (deploymentVersions) {
+    if (appName) {
+      const deployments = await deploymentList(appName)
+      if (deployments) {
         cli.table(
-          deploymentVersions,
+          deployments,
           {
             version: { header: 'version' },
             artifactUrl: { header: 'artifactUrl' },
@@ -43,10 +44,10 @@ export default class Ls extends Command {
         )
       }
     } else {
-      const deployments = await deploymentList()
-      if (deployments) {
+      const apps = await appList()
+      if (apps) {
         cli.table(
-          deployments,
+          apps,
           {
             name: {},
             description: {},

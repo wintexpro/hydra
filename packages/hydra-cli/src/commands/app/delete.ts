@@ -1,24 +1,21 @@
 import { Command, flags } from '@oclif/command'
 import Debug from 'debug'
-import {
-  destroyDeployment,
-  destroyVersion,
-} from '../../rest-client/routes/destroy'
+import { destroyApp, destroyDeployment } from '../../rest-client/routes/destroy'
 
 const debug = Debug('qnode-cli:delete')
 
 export default class Delete extends Command {
-  static description = 'Destroy deployment'
+  static description = 'Delete app or deployment'
 
   static flags = {
     name: flags.string({
       char: 'n',
-      description: 'Deployment name',
+      description: 'app name',
       required: true,
     }),
     version: flags.integer({
       char: 'v',
-      description: 'Deployment version',
+      description: 'version name',
       required: false,
     }),
   }
@@ -26,14 +23,14 @@ export default class Delete extends Command {
   async run(): Promise<void> {
     const { flags } = this.parse(Delete)
     debug(`Parsed flags: ${JSON.stringify(flags, null, 2)}`)
-    const deploymentName = flags.name
+    const appName = flags.name
     const version = flags.version
 
     let message
     if (version) {
-      message = await destroyVersion(deploymentName, version)
+      message = await destroyDeployment(appName, version)
     } else {
-      message = await destroyDeployment(deploymentName)
+      message = await destroyApp(appName)
     }
     this.log(message)
   }
