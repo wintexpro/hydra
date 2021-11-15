@@ -1,9 +1,7 @@
 import { Command, flags } from '@oclif/command'
-import { upgradeDeployment } from '../../rest-client/routes/upgrade'
+import { upgradeDeployment } from '../../rest-client/routes/upgradeDeployment'
 import Debug from 'debug'
 import simpleGit, {
-  DefaultLogFields,
-  LogOptions,
   RemoteWithRefs,
   SimpleGit,
   SimpleGitOptions,
@@ -26,18 +24,12 @@ export default class Upgrade extends Command {
       description: 'Deployment name',
       required: true,
     }),
-    version: flags.string({
-      char: 'v',
-      description: 'Version name',
-      required: true,
-    }),
   }
 
   async run(): Promise<void> {
     const { flags } = this.parse(Upgrade)
     debug(`Parsed flags: ${JSON.stringify(flags, null, 2)}`)
     const deploymentName = flags.name
-    const version = flags.version
 
     let remoteUrl: RemoteWithRefs
     const remotes = await git.getRemotes(true)
@@ -62,43 +54,11 @@ export default class Upgrade extends Command {
       })
     })
     const branch = (await git.branch()).current
-    const status = await git.status()
-    if (status.files && status.files.length) {
-      this.error(`There are unstaged or uncommitted changes`)
-    }
-    await git.fetch()
-    const remoteBranchRefs = await git.listRemote([
-      `${remoteUrl.name}`,
-      `${branch}`,
-    ])
-    if (remoteBranchRefs === '') {
-      this.error(`Remote branch "${remoteUrl.name}/${branch}" not exists`)
-    }
-    const localCommit = await git.log([
-      '-n',
-      1,
-      branch,
-    ] as LogOptions<DefaultLogFields>)
-    const remoteCommit = await git.log([
-      '-n',
-      1,
-      `${remoteUrl.name}/${branch}`,
-    ] as LogOptions<DefaultLogFields>)
-    if (
-      !localCommit.latest ||
-      !remoteCommit.latest ||
-      localCommit.latest.hash !== remoteCommit.latest.hash
-    ) {
-      this.error(
-        `Head origin commit is not the same as the local origin commit`
-      )
-    }
 
     this.log(`🦑 Releasing (upgrade) the Squid at ${remoteUrl.name}`)
     const message = await upgradeDeployment(
       deploymentName,
-      version,
-      `${remoteUrl.refs.fetch}#${remoteCommit.latest.hash}`
+      `${remoteUrl.refs.fetch}#${branch}`
     )
     this.log(message)
   }

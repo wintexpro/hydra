@@ -12,20 +12,14 @@ export type ResponseBody = {
 
 export async function deploy(
   deploymentName: string,
-  sourceCodeUrl: string,
-  description?: string,
-  logoUrl?: string,
-  websiteUrl?: string
+  artifactUrl: string
 ): Promise<string | undefined> {
-  const apiUrl = `${baseUrl}/client/project`
+  const apiUrl = `${baseUrl}/client/deployment`
   const response = await request(apiUrl, {
     method: 'post',
     body: JSON.stringify({
       name: deploymentName,
-      description,
-      logoUrl,
-      sourceCodeUrl,
-      websiteUrl,
+      artifactUrl,
     }),
     headers: {
       // eslint-disable-next-line @typescript-eslint/naming-convention

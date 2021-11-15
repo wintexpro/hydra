@@ -33,7 +33,8 @@ export default class Ls extends Command {
         cli.table(
           deploymentVersions,
           {
-            version: { header: 'version' },
+            name: {},
+            version: { header: 'Alias version' },
             artifactUrl: { header: 'artifactUrl' },
             deploymentUrl: { header: 'deploymentUrl' },
             status: {},
@@ -48,8 +49,8 @@ export default class Ls extends Command {
         cli.table(
           deployments,
           {
-            name: {},
-            description: {},
+            deployment: {},
+            aliasVersion: { header: 'Alias version' },
           },
           { 'no-truncate': noTruncate }
         )
