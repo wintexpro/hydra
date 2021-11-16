@@ -1,6 +1,6 @@
 import { Command, flags } from '@oclif/command'
 import { userLogFileName } from '../util'
-
+import { Tail as NodeTail } from 'tail'
 export default class Tail extends Command {
   static flags = {
     type: flags.string({
@@ -18,8 +18,16 @@ export default class Tail extends Command {
         throw Error(`Invalid log type ${flags.type}`)
       }
       const fileName = userLogFileName
-      const spawn = require('child_process').spawn
-      spawn('tail', ['-f', fileName], { stdio: 'inherit' })
+      const tail = new NodeTail(fileName)
+      tail.on('line', function (data) {
+        console.log(data)
+      })
+      tail.on('error', function (e) {
+        console.error(`Tail error: ${(e as { message: string }).message}`)
+        console.log(`Shutting down...`)
+        process.exit(1)
+      })
+      tail.watch()
     } catch (e) {
       console.error(`Error: ${(e as { message: string }).message}`)
       console.log(`Shutting down...`)
