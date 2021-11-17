@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## 4.2.0-alpha.8 (2021-11-17)
+
+
+### Features
+
+* **hydra-indexer:** add missing FK indices to the schema ([ddc47c8](https://github.com/subsquid/hydra/commit/ddc47c87ed41fbea6928dc714a5b3be92a523714))
+
+
+
 ## 4.2.0-alpha.7 (2021-11-06)
 
 
