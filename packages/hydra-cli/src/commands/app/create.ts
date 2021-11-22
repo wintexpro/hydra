@@ -5,7 +5,7 @@ import { create } from '../../rest-client/routes/create'
 const debug = Debug('qnode-cli:create')
 
 export default class Create extends Command {
-  static description = 'Create'
+  static description = 'Create a project'
 
   static flags = {
     name: flags.string({
