@@ -9,6 +9,10 @@ import simpleGit, {
   SimpleGitOptions,
 } from 'simple-git'
 import cliSelect from 'cli-select'
+import {
+  DeployPipelineStatusEnum,
+  getDeployPipeline,
+} from '../../rest-client/routes/getDeployPipeline'
 
 const debug = Debug('qnode-cli:deploy')
 const options: Partial<SimpleGitOptions> = {
@@ -95,11 +99,77 @@ export default class Deploy extends Command {
     }
 
     this.log(`🦑 Releasing the Squid at ${remoteUrl.name}`)
-    const message = await deploy(
+    const result = await deploy(
       appName,
       version,
-      `${remoteUrl.refs.fetch}#${remoteCommit.latest.hash}`
+      `${remoteUrl.refs.fetch}#${remoteCommit.latest?.hash}`
     )
-    this.log(message)
+    this.log('◷ ...')
+    let inProgress = true
+    while (inProgress) {
+      const pipeline = await getDeployPipeline(appName, version)
+      if (pipeline) {
+        switch (pipeline?.status) {
+          case DeployPipelineStatusEnum.CREATED:
+            this.log(`◷ App created, wait for a building docker images`)
+            if (pipeline.isErrorOccurred) {
+              this.error(
+                buildPipelineErrorMessage(
+                  `❌ An error occurred during building process`,
+                  pipeline.comment
+                )
+              )
+            }
+            break
+          case DeployPipelineStatusEnum.IMAGE_BUILDING:
+            this.log(`◷ Building docker images for your app`)
+            if (pipeline.isErrorOccurred) {
+              this.error(
+                buildPipelineErrorMessage(
+                  `❌ An error occurred during building process`,
+                  pipeline.comment
+                )
+              )
+            }
+            break
+          case DeployPipelineStatusEnum.IMAGE_PUSHING:
+            this.log(`◷ Pushing docker images for your app`)
+            if (pipeline.isErrorOccurred) {
+              this.error(
+                buildPipelineErrorMessage(
+                  `❌ An error occurred during pushing process`,
+                  pipeline.comment
+                )
+              )
+            }
+            break
+          case DeployPipelineStatusEnum.DEPLOYING:
+            this.log(`◷ Deploying your app on server`)
+            if (pipeline.isErrorOccurred) {
+              this.error(
+                buildPipelineErrorMessage(
+                  `❌ An error occurred during deploying process`,
+                  pipeline.comment
+                )
+              )
+            }
+            break
+          case DeployPipelineStatusEnum.OK:
+            this.log(
+              `◷ Your app ready and accessible on ${result?.deploymentVersion.deploymentUrl}`
+            )
+            inProgress = false
+            break
+          default:
+            this.error('❌ An error occurred. Unexpected status of pipeline.')
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+    }
+    this.log('✔️ Done!')
   }
+}
+
+function buildPipelineErrorMessage(text: string, errorMessage: string): string {
+  return `${text} ${errorMessage ? `: ${errorMessage}` : ''}`
 }
