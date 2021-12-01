@@ -9,6 +9,7 @@ import simpleGit, {
   SimpleGitOptions,
 } from 'simple-git'
 import cliSelect from 'cli-select'
+import cli from 'cli-ux'
 import {
   DeployPipelineStatusEnum,
   getDeployPipeline,
@@ -98,20 +99,32 @@ export default class Deploy extends Command {
       )
     }
 
-    this.log(`🦑 Releasing the Squid at ${remoteUrl.name}`)
+    this.log(
+      `🦑 Releasing the Squid at ${remoteUrl.refs.fetch}.git#${remoteCommit.latest?.hash}`
+    )
     const result = await deploy(
       appName,
       version,
-      `${remoteUrl.refs.fetch}#${remoteCommit.latest?.hash}`
+      `${remoteUrl.refs.fetch}.git#${remoteCommit.latest?.hash}`
     )
-    this.log('◷ ...')
+    this.log(
+      '◷ You can detach from the resulting build process by pressing Ctrl + C. This does not cancel the deploy.'
+    )
+    this.log(
+      '◷ The deploy will continue in the background and will create a new squid as soon as it completes.'
+    )
     let inProgress = true
+    let lastStatus
     while (inProgress) {
       const pipeline = await getDeployPipeline(appName, version)
       if (pipeline) {
+        if (pipeline.status !== lastStatus) {
+          lastStatus = pipeline.status
+          cli.action.stop('✔️')
+        }
         switch (pipeline?.status) {
           case DeployPipelineStatusEnum.CREATED:
-            this.log(`◷ App created, wait for a building docker images`)
+            cli.action.start('◷ Preparing your squid')
             if (pipeline.isErrorOccurred) {
               this.error(
                 buildPipelineErrorMessage(
@@ -122,7 +135,7 @@ export default class Deploy extends Command {
             }
             break
           case DeployPipelineStatusEnum.IMAGE_BUILDING:
-            this.log(`◷ Building docker images for your app`)
+            cli.action.start('◷ Building your squid')
             if (pipeline.isErrorOccurred) {
               this.error(
                 buildPipelineErrorMessage(
@@ -133,7 +146,7 @@ export default class Deploy extends Command {
             }
             break
           case DeployPipelineStatusEnum.IMAGE_PUSHING:
-            this.log(`◷ Pushing docker images for your app`)
+            cli.action.start('◷ Publishing your squid')
             if (pipeline.isErrorOccurred) {
               this.error(
                 buildPipelineErrorMessage(
@@ -144,7 +157,7 @@ export default class Deploy extends Command {
             }
             break
           case DeployPipelineStatusEnum.DEPLOYING:
-            this.log(`◷ Deploying your app on server`)
+            cli.action.start('◷ Almost ready')
             if (pipeline.isErrorOccurred) {
               this.error(
                 buildPipelineErrorMessage(
@@ -156,7 +169,7 @@ export default class Deploy extends Command {
             break
           case DeployPipelineStatusEnum.OK:
             this.log(
-              `◷ Your app ready and accessible on ${result?.deploymentVersion.deploymentUrl}`
+              `◷ Your squid almost ready and will be accessible on ${result?.deploymentVersion.deploymentUrl}`
             )
             inProgress = false
             break
