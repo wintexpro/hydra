@@ -9,6 +9,11 @@ import simpleGit, {
   SimpleGitOptions,
 } from 'simple-git'
 import cliSelect from 'cli-select'
+import cli from 'cli-ux'
+import {
+  DeployPipelineStatusEnum,
+  getDeployPipeline,
+} from '../../rest-client/routes/pipeline'
 
 const debug = Debug('qnode-cli:deploy')
 const options: Partial<SimpleGitOptions> = {
@@ -94,12 +99,90 @@ export default class Deploy extends Command {
       )
     }
 
-    this.log(`🦑 Releasing the Squid at ${remoteUrl.name}`)
-    const message = await deploy(
+    this.log(
+      `🦑 Releasing the Squid at ${remoteUrl.refs.fetch}.git#${remoteCommit.latest?.hash}`
+    )
+    const result = await deploy(
       appName,
       version,
-      `${remoteUrl.refs.fetch}#${remoteCommit.latest.hash}`
+      `${remoteUrl.refs.fetch}.git#${remoteCommit.latest?.hash}`
     )
-    this.log(message)
+    this.log(
+      '◷ You can detach from the resulting build process by pressing Ctrl + C. This does not cancel the deploy.'
+    )
+    this.log(
+      '◷ The deploy will continue in the background and will create a new squid as soon as it completes.'
+    )
+    let inProgress = true
+    let lastStatus
+    while (inProgress) {
+      const pipeline = await getDeployPipeline(appName, version)
+      if (pipeline) {
+        if (pipeline.status !== lastStatus) {
+          lastStatus = pipeline.status
+          cli.action.stop('✔️')
+        }
+        switch (pipeline?.status) {
+          case DeployPipelineStatusEnum.CREATED:
+            cli.action.start('◷ Preparing your squid')
+            if (pipeline.isErrorOccurred) {
+              this.error(
+                buildPipelineErrorMessage(
+                  `❌ An error occurred during building process`,
+                  pipeline.comment
+                )
+              )
+            }
+            break
+          case DeployPipelineStatusEnum.IMAGE_BUILDING:
+            cli.action.start('◷ Building your squid')
+            if (pipeline.isErrorOccurred) {
+              this.error(
+                buildPipelineErrorMessage(
+                  `❌ An error occurred during building process`,
+                  pipeline.comment
+                )
+              )
+            }
+            break
+          case DeployPipelineStatusEnum.IMAGE_PUSHING:
+            cli.action.start('◷ Publishing your squid')
+            if (pipeline.isErrorOccurred) {
+              this.error(
+                buildPipelineErrorMessage(
+                  `❌ An error occurred during pushing process`,
+                  pipeline.comment
+                )
+              )
+            }
+            break
+          case DeployPipelineStatusEnum.DEPLOYING:
+            cli.action.start('◷ Almost ready')
+            if (pipeline.isErrorOccurred) {
+              this.error(
+                buildPipelineErrorMessage(
+                  `❌ An error occurred during deploying process`,
+                  pipeline.comment
+                )
+              )
+            }
+            break
+          case DeployPipelineStatusEnum.OK:
+            this.log(
+              `◷ Your squid almost ready and will be accessible on ${result?.deploymentVersion.deploymentUrl}`
+            )
+            inProgress = false
+            break
+          default:
+            this.error('❌ An error occurred. Unexpected status of pipeline.')
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+    }
+    this.log('✔️ Done!')
   }
+}
+
+function buildPipelineErrorMessage(text: string, errorMessage: string): string {
+  return `${text} ${errorMessage ? `: ${errorMessage}` : ''}`
 }
