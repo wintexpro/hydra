@@ -36,6 +36,11 @@ export default class Deploy extends Command {
       description: 'version name',
       required: true,
     }),
+    url: flags.string({
+      char: 'u',
+      description: 'url',
+      required: false,
+    }),
   }
 
   async run(): Promise<void> {
@@ -43,70 +48,66 @@ export default class Deploy extends Command {
     debug(`Parsed flags: ${JSON.stringify(flags, null, 2)}`)
     const appName = flags.name
     const version = flags.version
-
-    let remoteUrl: RemoteWithRefs
-    const remotes = await git.getRemotes(true)
-    if (remotes.length === 0) {
-      this.error(`The remotes were not found`, { code: '1' })
-    } else if (remotes.length === 1) {
-      remoteUrl = remotes[0]
-    } else {
-      const selected = await cliSelect({
-        cleanup: false,
-        values: remotes.map((remote) => remote.name),
-      }).catch(() => {
-        this.error('Canceled', { code: '1' })
+    let deployUrl = flags.url
+    if (!deployUrl) {
+      let remoteUrl: RemoteWithRefs
+      const remotes = await git.getRemotes(true)
+      if (remotes.length === 0) {
+        this.error(`The remotes were not found`, { code: '1' })
+      } else if (remotes.length === 1) {
+        remoteUrl = remotes[0]
+      } else {
+        const selected = await cliSelect({
+          cleanup: false,
+          values: remotes.map((remote) => remote.name),
+        }).catch(() => {
+          this.error('Canceled', { code: '1' })
+        })
+        remoteUrl = remotes.find(
+          (remote) => remote.name === selected.value
+        ) as RemoteWithRefs
+      }
+      await git.listRemote([remoteUrl.name]).catch(() => {
+        this.error(`Remote url with name ${remoteUrl.name} not exists`, {
+          code: '1',
+        })
       })
-      remoteUrl = remotes.find(
-        (remote) => remote.name === selected.value
-      ) as RemoteWithRefs
+      const branch = (await git.branch()).current
+      const status = await git.status()
+      if (status.files && status.files.length) {
+        this.error(`There are unstaged or uncommitted changes`)
+      }
+      await git.fetch()
+      const remoteBranchRefs = await git.listRemote([
+        `${remoteUrl.name}`,
+        `${branch}`,
+      ])
+      if (remoteBranchRefs === '') {
+        this.error(`Remote branch "${remoteUrl.name}/${branch}" not exists`)
+      }
+      const localCommit = await git.log([
+        '-n',
+        1,
+        branch,
+      ] as LogOptions<DefaultLogFields>)
+      const remoteCommit = await git.log([
+        '-n',
+        1,
+        `${remoteUrl.name}/${branch}`,
+      ] as LogOptions<DefaultLogFields>)
+      if (
+        !localCommit.latest ||
+        !remoteCommit.latest ||
+        localCommit.latest.hash !== remoteCommit.latest.hash
+      ) {
+        this.error(
+          `Head origin commit is not the same as the local origin commit`
+        )
+      }
+      deployUrl = `${remoteUrl.refs.fetch}.git#${remoteCommit.latest.hash}`
     }
-    await git.listRemote([remoteUrl.name]).catch(() => {
-      this.error(`Remote url with name ${remoteUrl.name} not exists`, {
-        code: '1',
-      })
-    })
-    const branch = (await git.branch()).current
-    const status = await git.status()
-    if (status.files && status.files.length) {
-      this.error(`There are unstaged or uncommitted changes`)
-    }
-    await git.fetch()
-    const remoteBranchRefs = await git.listRemote([
-      `${remoteUrl.name}`,
-      `${branch}`,
-    ])
-    if (remoteBranchRefs === '') {
-      this.error(`Remote branch "${remoteUrl.name}/${branch}" not exists`)
-    }
-    const localCommit = await git.log([
-      '-n',
-      1,
-      branch,
-    ] as LogOptions<DefaultLogFields>)
-    const remoteCommit = await git.log([
-      '-n',
-      1,
-      `${remoteUrl.name}/${branch}`,
-    ] as LogOptions<DefaultLogFields>)
-    if (
-      !localCommit.latest ||
-      !remoteCommit.latest ||
-      localCommit.latest.hash !== remoteCommit.latest.hash
-    ) {
-      this.error(
-        `Head origin commit is not the same as the local origin commit`
-      )
-    }
-
-    this.log(
-      `🦑 Releasing the Squid at ${remoteUrl.refs.fetch}.git#${remoteCommit.latest?.hash}`
-    )
-    const result = await deploy(
-      appName,
-      version,
-      `${remoteUrl.refs.fetch}.git#${remoteCommit.latest?.hash}`
-    )
+    this.log(`🦑 Releasing the Squid at ${deployUrl}`)
+    const result = await deploy(appName, version, deployUrl)
     this.log(
       '◷ You can detach from the resulting build process by pressing Ctrl + C. This does not cancel the deploy.'
     )
