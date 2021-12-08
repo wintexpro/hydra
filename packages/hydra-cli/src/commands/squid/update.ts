@@ -1,18 +1,20 @@
 import { Command, flags } from '@oclif/command'
 import Debug from 'debug'
-import { updateApp } from '../../rest-client/routes/update'
+import { updateSquid } from '../../rest-client/routes/update'
 
 const debug = Debug('qnode-cli:update')
 
 export default class Update extends Command {
-  static description = 'Update app'
+  static description = 'Update squid'
+  static args = [
+    {
+      name: 'name',
+      description: 'squid name',
+      required: true,
+    },
+  ]
 
   static flags = {
-    name: flags.string({
-      char: 'n',
-      description: 'app name',
-      required: true,
-    }),
     description: flags.string({
       char: 'd',
       description: 'description',
@@ -36,16 +38,16 @@ export default class Update extends Command {
   }
 
   async run(): Promise<void> {
-    const { flags } = this.parse(Update)
-    debug(`Parsed flags: ${JSON.stringify(flags, null, 2)}`)
-    const name = flags.name
+    const { flags, args } = this.parse(Update)
+    debug(`Parsed flags: ${JSON.stringify(flags, null, 2)}, args: ${args}`)
+    const name = args.name
     const description = flags.description
     const logoUrl = flags.logo
     const sourceCodeUrl = flags.source
     const websiteUrl = flags.website
 
     this.log(`🦑 Updating ${name}`)
-    const message = await updateApp(
+    const message = await updateSquid(
       name,
       description,
       logoUrl,
