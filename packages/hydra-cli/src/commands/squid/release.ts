@@ -39,11 +39,17 @@ export default class Release extends Command {
       description: 'source',
       required: false,
     }),
+    description: flags.string({
+      char: 'd',
+      description: 'description',
+      required: false,
+    }),
   }
 
   async run(): Promise<void> {
     const { flags, args } = this.parse(Release)
     debug(`Parsed flags: ${JSON.stringify(flags, null, 2)}, args: ${args}`)
+    const description = flags.description
     const nameAndVersion = args.nameAndVersion
     const { squidName, versionName } = parseNameAndVersion(nameAndVersion, this)
     let deployUrl = flags.source
@@ -105,7 +111,7 @@ export default class Release extends Command {
       deployUrl = `${remoteUrl.refs.fetch}.git#${remoteCommit.latest.hash}`
     }
     this.log(`🦑 Releasing the Squid at ${deployUrl}`)
-    const result = await release(squidName, versionName, deployUrl)
+    const result = await release(squidName, versionName, deployUrl, description)
     this.log(
       '◷ You can detach from the resulting build process by pressing Ctrl + C. This does not cancel the deploy.'
     )

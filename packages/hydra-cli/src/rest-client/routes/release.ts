@@ -6,7 +6,8 @@ import { request } from '../request'
 export async function release(
   squidName: string,
   versionName: string,
-  artifactUrl: string
+  artifactUrl: string,
+  description?: string
 ): Promise<{
   id: number
   name: string
@@ -15,7 +16,7 @@ export async function release(
   const apiUrl = `${baseUrl}/client/squid/${squidName}/version`
   const response = await request(apiUrl, {
     method: 'post',
-    body: JSON.stringify({ artifactUrl, versionName }),
+    body: JSON.stringify({ artifactUrl, versionName, description }),
     headers: {
       // eslint-disable-next-line @typescript-eslint/naming-convention
       'Content-Type': 'application/json',

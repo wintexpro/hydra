@@ -10,7 +10,7 @@ export default class Kill extends Command {
   static args = [
     {
       name: 'nameAndVersion',
-      description: 'name@version',
+      description: '<name> or <name@version>',
       required: true,
     },
   ]
@@ -18,14 +18,13 @@ export default class Kill extends Command {
   async run(): Promise<void> {
     const { flags, args } = this.parse(Kill)
     debug(`Parsed flags: ${JSON.stringify(flags, null, 2)}, args: ${args}`)
-    const nameAndVersion = args.nameAndVersion
-    const { squidName, versionName } = parseNameAndVersion(nameAndVersion, this)
-
+    const params: string = args.nameAndVersion
     let message
-    if (versionName) {
+    if (params.includes('@')) {
+      const { squidName, versionName } = parseNameAndVersion(params, this)
       message = await destroyDeployment(squidName, versionName)
     } else {
-      message = await destroyApp(squidName)
+      message = await destroyApp(params)
     }
     this.log(message)
   }
